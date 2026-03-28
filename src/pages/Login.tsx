@@ -57,8 +57,8 @@ const Login = () => {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          <Button type="submit" className="w-full">
-            Iniciar sesión
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Verificando...' : 'Iniciar sesión'}
           </Button>
         </form>
 
