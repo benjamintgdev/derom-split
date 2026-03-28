@@ -9,7 +9,15 @@ interface AuthContextType {
   isContable: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const defaultAuth: AuthContextType = {
+  user: null,
+  login: async () => false,
+  logout: () => {},
+  isCeo: false,
+  isContable: false,
+};
+
+const AuthContext = createContext<AuthContextType>(defaultAuth);
 
 // Simple hash function for demo password storage (not plain text)
 async function hashPassword(pw: string): Promise<string> {
