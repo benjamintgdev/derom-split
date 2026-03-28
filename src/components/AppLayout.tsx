@@ -12,24 +12,35 @@ const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between border-b px-4 bg-card">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="mr-1" />
-              <img src={logoDerom} alt="DEROM" width={100} height={100} loading="lazy" className="hidden sm:block" />
-            </div>
+          <header className="h-16 flex items-center justify-between border-b border-border px-6 bg-card">
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                {user?.nombre} <span className="badge-active ml-1">{user?.rol?.toUpperCase()}</span>
-              </span>
-              <Button variant="ghost" size="sm" onClick={logout}>
+              <SidebarTrigger className="text-foreground hover:bg-accent rounded-lg" />
+              <div className="hidden sm:flex items-center gap-3">
+                <div className="w-px h-6 bg-border" />
+                <img src={logoDerom} alt="DEROM" width={90} height={90} loading="lazy" />
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-primary">
+                    {user?.nombre?.charAt(0)?.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground leading-tight">{user?.nombre}</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">{user?.rol?.toUpperCase()}</span>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-foreground hover:bg-accent">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <main className="flex-1 p-6 md:p-8 overflow-auto bg-secondary/30">
             <Outlet />
           </main>
         </div>

@@ -27,45 +27,57 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-sm animate-fade-in">
-        <div className="flex flex-col items-center mb-8">
-          <img src={logoDerom} alt="DEROM Real Estate" width={180} height={180} className="mb-6" />
-          <p className="text-muted-foreground text-sm">Sistema de Split de Comisiones</p>
+      <div className="w-full max-w-[400px] px-6 animate-fade-in">
+        {/* Logo & branding */}
+        <div className="flex flex-col items-center mb-10">
+          <img src={logoDerom} alt="DEROM Real Estate" width={200} height={200} className="mb-4" />
+          <div className="w-12 h-px bg-primary/30 mb-3" />
+          <p className="text-muted-foreground text-sm tracking-wide">Sistema de Split de Comisiones</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username">Usuario</Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="Usuario"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-          </div>
+        {/* Login card */}
+        <div className="kpi-card p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Usuario</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Ingrese su usuario"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="h-11"
+              />
+            </div>
 
-          {error && <p className="text-destructive text-sm">{error}</p>}
+            {error && (
+              <div className="rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-2">
+                <p className="text-destructive text-sm">{error}</p>
+              </div>
+            )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Verificando...' : 'Iniciar sesión'}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full h-11 font-medium" disabled={loading}>
+              {loading ? 'Verificando...' : 'Iniciar sesión'}
+            </Button>
+          </form>
+        </div>
 
-        <div className="mt-8 p-4 rounded-lg bg-muted text-xs text-muted-foreground space-y-1">
-          <p className="font-medium text-foreground">Usuarios demo:</p>
-          <p>CEO: Angeldrom / CEOderom#</p>
-          <p>Contable: Contable / 54321</p>
+        {/* Demo hint */}
+        <div className="mt-6 p-4 rounded-xl border border-border bg-card text-xs text-muted-foreground space-y-1.5">
+          <p className="font-semibold text-foreground text-xs uppercase tracking-wide">Usuarios demo</p>
+          <p>CEO: <span className="font-medium text-foreground">Angeldrom</span> / CEOderom#</p>
+          <p>Contable: <span className="font-medium text-foreground">Contable</span> / 54321</p>
         </div>
       </div>
     </div>
