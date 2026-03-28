@@ -7,18 +7,21 @@ import { Label } from '@/components/ui/label';
 
 const Login = () => {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email || !password) {
+    if (!username || !password) {
       setError('Complete todos los campos');
       return;
     }
-    const ok = login(email, password);
+    setLoading(true);
+    const ok = await login(username, password);
+    setLoading(false);
     if (!ok) setError('Credenciales incorrectas');
   };
 
