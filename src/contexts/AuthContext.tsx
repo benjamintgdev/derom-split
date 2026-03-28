@@ -48,11 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const login = (email: string, password: string): boolean => {
-    const found = DEMO_USERS.find(u => u.email === email && u.password === password);
+  const login = async (username: string, password: string): Promise<boolean> => {
+    await initHashes;
+    const inputHash = await hashPassword(password);
+    const found = DEMO_USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.hash === inputHash);
     if (found) {
-      const { password: _, ...userData } = found;
-      setUser(userData);
+      setUser({ id: found.id, nombre: found.nombre, email: `${found.username.toLowerCase()}@derom.com`, rol: found.rol });
       return true;
     }
     return false;

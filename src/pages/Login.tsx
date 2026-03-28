@@ -64,8 +64,8 @@ const Login = () => {
 
         <div className="mt-8 p-4 rounded-lg bg-muted text-xs text-muted-foreground space-y-1">
           <p className="font-medium text-foreground">Usuarios demo:</p>
-          <p>CEO: ceo@derom.com / admin123</p>
-          <p>Contable: contable@derom.com / contable123</p>
+          <p>CEO: Angeldrom / CEOderom#</p>
+          <p>Contable: Contable / 54321</p>
         </div>
       </div>
     </div>
