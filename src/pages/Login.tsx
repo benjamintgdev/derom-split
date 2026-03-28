@@ -7,18 +7,21 @@ import { Label } from '@/components/ui/label';
 
 const Login = () => {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email || !password) {
+    if (!username || !password) {
       setError('Complete todos los campos');
       return;
     }
-    const ok = login(email, password);
+    setLoading(true);
+    const ok = await login(username, password);
+    setLoading(false);
     if (!ok) setError('Credenciales incorrectas');
   };
 
@@ -32,13 +35,13 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electrónico</Label>
+            <Label htmlFor="username">Usuario</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="correo@derom.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              placeholder="Usuario"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -54,15 +57,15 @@ const Login = () => {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          <Button type="submit" className="w-full">
-            Iniciar sesión
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Verificando...' : 'Iniciar sesión'}
           </Button>
         </form>
 
         <div className="mt-8 p-4 rounded-lg bg-muted text-xs text-muted-foreground space-y-1">
           <p className="font-medium text-foreground">Usuarios demo:</p>
-          <p>CEO: ceo@derom.com / admin123</p>
-          <p>Contable: contable@derom.com / contable123</p>
+          <p>CEO: Angeldrom / CEOderom#</p>
+          <p>Contable: Contable / 54321</p>
         </div>
       </div>
     </div>
