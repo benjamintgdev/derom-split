@@ -35,13 +35,13 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electrónico</Label>
+            <Label htmlFor="username">Usuario</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="correo@derom.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              placeholder="Usuario"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
             />
           </div>
           <div className="space-y-2">
