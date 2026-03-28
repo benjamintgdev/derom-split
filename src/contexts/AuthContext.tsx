@@ -3,7 +3,7 @@ import { User, UserRole } from '@/types';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isCeo: boolean;
   isContable: boolean;
