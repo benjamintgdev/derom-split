@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Agente, HistorialComisionAgente, Venta } from '@/types';
+import { Agente, HistorialComisionAgente, Venta, PagoComision } from '@/types';
 
 
 interface DataContextType {
   agentes: Agente[];
   historialComisiones: HistorialComisionAgente[];
   ventas: Venta[];
+  pagosComision: PagoComision[];
   addAgente: (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => Agente;
   updateAgente: (id: string, a: Partial<Agente>) => void;
   addHistorial: (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => void;
@@ -15,6 +16,8 @@ interface DataContextType {
   deleteVenta: (id: string) => void;
   getAgenteById: (id: string) => Agente | undefined;
   getVentaById: (id: string) => Venta | undefined;
+  addPagoComision: (p: Omit<PagoComision, 'id' | 'created_at'>) => PagoComision;
+  getPagosByVenta: (ventaId: string) => PagoComision[];
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -58,10 +61,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [agentes, setAgentes] = useState<Agente[]>(() => loadState('derom_agentes', INITIAL_AGENTES));
   const [historialComisiones, setHistorial] = useState<HistorialComisionAgente[]>(() => loadState('derom_historial', INITIAL_HISTORIAL));
   const [ventas, setVentas] = useState<Venta[]>(() => loadState('derom_ventas', []));
+  const [pagosComision, setPagosComision] = useState<PagoComision[]>(() => loadState('derom_pagos', []));
 
   useEffect(() => { localStorage.setItem('derom_agentes', JSON.stringify(agentes)); }, [agentes]);
   useEffect(() => { localStorage.setItem('derom_historial', JSON.stringify(historialComisiones)); }, [historialComisiones]);
   useEffect(() => { localStorage.setItem('derom_ventas', JSON.stringify(ventas)); }, [ventas]);
+  useEffect(() => { localStorage.setItem('derom_pagos', JSON.stringify(pagosComision)); }, [pagosComision]);
 
   const addAgente = (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => {
     const now = new Date().toISOString();
@@ -75,7 +80,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const addHistorial = (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => {
-    // Close previous open vigencia for this agent
     const now = new Date().toISOString();
     const newDesde = new Date(h.vigencia_desde);
     const dayBefore = new Date(newDesde);
@@ -113,11 +117,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const getAgenteById = (id: string) => agentes.find(a => a.id === id);
   const getVentaById = (id: string) => ventas.find(v => v.id === id);
 
+  const addPagoComision = (p: Omit<PagoComision, 'id' | 'created_at'>) => {
+    const now = new Date().toISOString();
+    const newP: PagoComision = { ...p, id: generateId(), created_at: now };
+    setPagosComision(prev => [...prev, newP]);
+    return newP;
+  };
+
+  const getPagosByVenta = (ventaId: string) =>
+    pagosComision.filter(p => p.venta_id === ventaId).sort((a, b) => new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime());
+
   return (
     <DataContext.Provider value={{
-      agentes, historialComisiones, ventas,
+      agentes, historialComisiones, ventas, pagosComision,
       addAgente, updateAgente, addHistorial, getHistorialByAgente,
       addVenta, updateVenta, deleteVenta, getAgenteById, getVentaById,
+      addPagoComision, getPagosByVenta,
     }}>
       {children}
     </DataContext.Provider>

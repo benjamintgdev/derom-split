@@ -28,6 +28,29 @@ export interface HistorialComisionAgente {
 }
 
 export type EstadoVenta = 'reserva' | 'cerrada';
+export type EstadoPagoComision = 'pendiente' | 'parcial' | 'pagada';
+export type TipoPagoComision = 'unico' | 'parcial';
+
+export const TIPOS_INMUEBLE = [
+  'Apartamento construido',
+  'Apartamento en plano',
+  'Casa/Villa construida',
+  'Casa/Villa en plano',
+  'Solar',
+  'Local',
+] as const;
+
+export type TipoInmueble = typeof TIPOS_INMUEBLE[number];
+
+export interface PagoComision {
+  id: string;
+  venta_id: string;
+  fecha_pago: string;
+  monto_pago: number;
+  porcentaje_pago: number;
+  nota: string;
+  created_at: string;
+}
 
 export interface Venta {
   id: string;
@@ -66,6 +89,25 @@ export interface Venta {
   creado_por: string;
   created_at: string;
   updated_at: string;
+  // Dynamic property fields
+  habitaciones?: number;
+  metraje?: number;
+  precio_por_m2?: number;
+  // Assistance fields
+  asistencia_agente_id?: string | null;
+  porcentaje_asistencia?: number;
+  monto_asistencia_agente?: number;
+  monto_asistencia_empresa?: number;
+  // Payment tracking fields
+  tipo_pago_comision?: TipoPagoComision;
+  monto_total_comision_a_pagar?: number;
+  monto_pagado_comision?: number;
+  porcentaje_pagado_comision?: number;
+  balance_pendiente_comision?: number;
+  fecha_primer_pago_comision?: string;
+  fecha_proximo_pago_comision?: string;
+  estado_pago_comision?: EstadoPagoComision;
+  notas_pago_comision?: string;
 }
 
 export interface SplitVigente {
@@ -84,4 +126,9 @@ export interface CalculoVenta {
   captador_agente: number;
   captador_empresa: number;
   empresa_total: number;
+  // Assistance breakdown
+  asistencia_agente?: number;
+  asistencia_empresa?: number;
+  vendedor_agente_final?: number;
+  vendedor_empresa_final?: number;
 }
