@@ -9,7 +9,7 @@ import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 const SaleDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getVentaById, getAgenteById, deleteVenta } = useData();
+  const { getVentaById, getAgenteById, deleteVenta, getPagosByVenta } = useData();
   const { isCeo } = useAuth();
   const venta = id ? getVentaById(id) : null;
 
@@ -17,6 +17,8 @@ const SaleDetail = () => {
 
   const vendedor = getAgenteById(venta.vendedor_id);
   const captador = venta.captador_id ? getAgenteById(venta.captador_id) : null;
+  const asistente = venta.asistencia_agente_id ? getAgenteById(venta.asistencia_agente_id) : null;
+  const pagos = id ? getPagosByVenta(id) : [];
 
   const handleDelete = () => {
     if (confirm('¿Está seguro de eliminar esta venta?')) {
@@ -24,6 +26,8 @@ const SaleDetail = () => {
       navigate('/ventas');
     }
   };
+
+  const estadoPagoLabel = venta.estado_pago_comision === 'pagada' ? 'Pagada' : venta.estado_pago_comision === 'parcial' ? 'Parcial' : 'Pendiente';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -64,6 +68,9 @@ const SaleDetail = () => {
               <Detail label="Teléfono" value={venta.telefono} />
               <Detail label="Email" value={venta.email} />
               {venta.fecha_cierre && <Detail label="Fecha Cierre" value={venta.fecha_cierre} />}
+              {venta.habitaciones !== undefined && venta.habitaciones > 0 && <Detail label="Habitaciones" value={venta.habitaciones.toString()} />}
+              {venta.metraje !== undefined && venta.metraje > 0 && <Detail label="Metraje" value={`${venta.metraje} m²`} />}
+              {venta.precio_por_m2 !== undefined && venta.precio_por_m2 > 0 && <Detail label="Precio por m²" value={formatCurrency(venta.precio_por_m2)} />}
             </div>
           </div>
 
@@ -89,11 +96,64 @@ const SaleDetail = () => {
                   <Detail label="% Captador" value={`${venta.porcentaje_captador}%`} />
                 </>
               )}
+              {asistente && (
+                <>
+                  <Detail label="Asistencia" value={asistente.nombre} />
+                  <Detail label="% Asistencia" value={`${venta.porcentaje_asistencia}%`} />
+                </>
+              )}
               {venta.porcentaje_referido > 0 && <Detail label="% Referido" value={`${venta.porcentaje_referido}%`} />}
               {venta.override_split_vendedor && <Detail label="" value="⚠️ Override split vendedor" />}
               {venta.override_split_captador && <Detail label="" value="⚠️ Override split captador" />}
             </div>
           </div>
+
+          {/* Payment info */}
+          <div className="kpi-card">
+            <h2 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-4">Información de Pago</h2>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+              <Detail label="Tipo de Pago" value={venta.tipo_pago_comision === 'unico' ? 'Pago único' : 'Pago parcial'} />
+              <Detail label="Estado" value={estadoPagoLabel} />
+              <Detail label="Total a Pagar" value={formatCurrency(venta.monto_total_comision_a_pagar ?? 0)} />
+              <Detail label="Monto Pagado" value={formatCurrency(venta.monto_pagado_comision ?? 0)} />
+              <Detail label="% Pagado" value={`${(venta.porcentaje_pagado_comision ?? 0).toFixed(1)}%`} />
+              <Detail label="Balance Pendiente" value={formatCurrency(venta.balance_pendiente_comision ?? 0)} />
+              {venta.fecha_primer_pago_comision && <Detail label="Primer Pago" value={venta.fecha_primer_pago_comision} />}
+              {venta.fecha_proximo_pago_comision && <Detail label="Próximo Pago" value={venta.fecha_proximo_pago_comision} />}
+            </div>
+            {venta.notas_pago_comision && (
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-muted-foreground">{venta.notas_pago_comision}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Payment history */}
+          {pagos.length > 0 && (
+            <div className="kpi-card">
+              <h2 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-4">Historial de Pagos</h2>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>%</th>
+                    <th>Nota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagos.map(p => (
+                    <tr key={p.id}>
+                      <td>{p.fecha_pago}</td>
+                      <td>{formatCurrency(p.monto_pago)}</td>
+                      <td>{p.porcentaje_pago.toFixed(1)}%</td>
+                      <td className="text-muted-foreground">{p.nota || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {venta.notas && (
             <div className="kpi-card">
@@ -113,6 +173,13 @@ const SaleDetail = () => {
               <div className="border-t border-border my-2" />
               <CommRow label="Vendedor (Agente)" value={venta.monto_vendedor_agente} />
               <CommRow label="Vendedor (Empresa)" value={venta.monto_vendedor_empresa} />
+              {asistente && (
+                <>
+                  <div className="border-t border-border my-2" />
+                  <CommRow label="Asistencia (Agente)" value={venta.monto_asistencia_agente ?? 0} />
+                  <CommRow label="Asistencia (Empresa)" value={venta.monto_asistencia_empresa ?? 0} />
+                </>
+              )}
               {captador && (
                 <>
                   <div className="border-t border-border my-2" />
