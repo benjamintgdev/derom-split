@@ -73,12 +73,9 @@ const Login = () => {
           </form>
         </div>
 
-        {/* Demo hint */}
-        <div className="mt-6 p-4 rounded-xl border border-border bg-card text-xs text-muted-foreground space-y-1.5">
-          <p className="font-semibold text-foreground text-xs uppercase tracking-wide">Usuarios demo</p>
-          <p>CEO: <span className="font-medium text-foreground">Angeldrom</span> / CEOderom#</p>
-          <p>Contable: <span className="font-medium text-foreground">Contable</span> / 54321</p>
-        </div>
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Solicite sus credenciales al administrador del sistema
+        </p>
       </div>
     </div>
   );
