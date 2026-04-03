@@ -1,12 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Agente, HistorialComisionAgente, Venta, PagoComision } from '@/types';
-
+import { getAgentes as fetchSheetAgentes, getVentas as fetchSheetVentas, createVenta as postVentaToSheet, SheetAgente } from '@/services/googleSheets';
+import { toast } from 'sonner';
 
 interface DataContextType {
   agentes: Agente[];
   historialComisiones: HistorialComisionAgente[];
   ventas: Venta[];
   pagosComision: PagoComision[];
+  sheetAgentes: SheetAgente[];
+  loadingAgentes: boolean;
+  loadingVentas: boolean;
   addAgente: (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => Agente;
   updateAgente: (id: string, a: Partial<Agente>) => void;
   addHistorial: (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => void;
@@ -18,6 +22,9 @@ interface DataContextType {
   getVentaById: (id: string) => Venta | undefined;
   addPagoComision: (p: Omit<PagoComision, 'id' | 'created_at'>) => PagoComision;
   getPagosByVenta: (ventaId: string) => PagoComision[];
+  saveVentaToSheet: (payload: Record<string, any>) => Promise<void>;
+  refreshVentas: () => Promise<void>;
+  refreshAgentes: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -63,10 +70,134 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [ventas, setVentas] = useState<Venta[]>(() => loadState('derom_ventas', []));
   const [pagosComision, setPagosComision] = useState<PagoComision[]>(() => loadState('derom_pagos', []));
 
+  // Google Sheets state
+  const [sheetAgentes, setSheetAgentes] = useState<SheetAgente[]>([]);
+  const [loadingAgentes, setLoadingAgentes] = useState(true);
+  const [loadingVentas, setLoadingVentas] = useState(true);
+
   useEffect(() => { localStorage.setItem('derom_agentes', JSON.stringify(agentes)); }, [agentes]);
   useEffect(() => { localStorage.setItem('derom_historial', JSON.stringify(historialComisiones)); }, [historialComisiones]);
   useEffect(() => { localStorage.setItem('derom_ventas', JSON.stringify(ventas)); }, [ventas]);
   useEffect(() => { localStorage.setItem('derom_pagos', JSON.stringify(pagosComision)); }, [pagosComision]);
+
+  // Load agentes from Google Sheets on mount
+  const refreshAgentes = useCallback(async () => {
+    setLoadingAgentes(true);
+    try {
+      const remote = await fetchSheetAgentes();
+      setSheetAgentes(remote);
+      // Also sync to local agentes array for compatibility with rest of app
+      const mapped: Agente[] = remote.map(a => ({
+        id: a.id_agente,
+        nombre: a.nombre,
+        activo: a.activo !== false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+      if (mapped.length > 0) {
+        setAgentes(mapped);
+        // Also create/update historial from sheet splits
+        const newHistorial: HistorialComisionAgente[] = remote.map((a, i) => ({
+          id: `sheet_hc_${a.id_agente}`,
+          agente_id: a.id_agente,
+          porcentaje_asesor: a.porcentaje_asesor,
+          porcentaje_empresa: a.porcentaje_empresa,
+          vigencia_desde: '2025-01-01',
+          vigencia_hasta: null,
+          creado_por: 'sheet',
+          observacion: 'Desde Google Sheets',
+          created_at: new Date().toISOString(),
+        }));
+        setHistorial(newHistorial);
+      }
+    } catch (err) {
+      console.error('Error loading agentes from Sheets:', err);
+      toast.error('No se pudieron cargar los agentes desde Google Sheets. Usando datos locales.');
+    } finally {
+      setLoadingAgentes(false);
+    }
+  }, []);
+
+  // Load ventas from Google Sheets on mount
+  const refreshVentas = useCallback(async () => {
+    setLoadingVentas(true);
+    try {
+      const remote = await fetchSheetVentas();
+      // Map sheet ventas to local Venta format
+      const mapped: Venta[] = remote.map((sv, i) => ({
+        id: sv.id || `sheet_v_${i}_${Date.now()}`,
+        tipo_ingreso: sv.tipo_inmueble ? 'Venta directa' : 'Venta directa',
+        fecha_reserva: sv.fecha_reserva || '',
+        cliente: sv.cliente || '',
+        telefono: sv.telefono || '',
+        email: sv.email || '',
+        proyecto: sv.proyecto || '',
+        unidad: sv.unidad || '',
+        tipo_inmueble: sv.tipo_inmueble || '',
+        precio_usd: Number(sv.precio_usd) || 0,
+        tasa: Number(sv.tasa) || 58,
+        precio_rd: Number(sv.precio_rd) || 0,
+        porcentaje_comision_venta: Number(sv.porcentaje_comision) || 0,
+        comision_bruta: Number(sv.comision_bruta) || 0,
+        vendedor_id: sv.vendedor_id || '',
+        captador_id: sv.captador_id || null,
+        porcentaje_captador: Number(sv.porcentaje_captador) || 0,
+        porcentaje_referido: Number(sv.referido_porcentaje) || 0,
+        fecha_cierre: sv.fecha_cierre || null,
+        estado: (sv.estado_venta === 'cerrada' ? 'cerrada' : 'reserva') as any,
+        notas: '',
+        split_vendedor_asesor_aplicado: 50,
+        split_vendedor_empresa_aplicado: 50,
+        split_captador_asesor_aplicado: 50,
+        split_captador_empresa_aplicado: 50,
+        override_split_vendedor: false,
+        override_split_captador: false,
+        monto_vendedor_agente: 0,
+        monto_vendedor_empresa: 0,
+        monto_captador_agente: 0,
+        monto_captador_empresa: 0,
+        monto_referido: 0,
+        monto_empresa_total: 0,
+        creado_por: '',
+        created_at: sv.fecha_reserva || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        habitaciones: sv.habitaciones ? Number(sv.habitaciones) : undefined,
+        metraje: sv.metraje ? Number(sv.metraje) : undefined,
+        precio_por_m2: sv.precio_m2 ? Number(sv.precio_m2) : undefined,
+        asistencia_agente_id: sv.asistencia_agente_id || null,
+        porcentaje_asistencia: sv.porcentaje_asistencia ? Number(sv.porcentaje_asistencia) : 0,
+        tipo_pago_comision: (sv.tipo_pago_comision === 'parcial' ? 'parcial' : 'unico') as any,
+        fecha_primer_pago_comision: sv.fecha_pago_1 || undefined,
+        fecha_proximo_pago_comision: sv.fecha_pago_2 || undefined,
+        estado_pago_comision: 'pendiente' as any,
+      }));
+      if (mapped.length > 0) {
+        setVentas(mapped);
+      }
+    } catch (err) {
+      console.error('Error loading ventas from Sheets:', err);
+      toast.error('No se pudieron cargar las ventas desde Google Sheets. Usando datos locales.');
+    } finally {
+      setLoadingVentas(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshAgentes();
+    refreshVentas();
+  }, [refreshAgentes, refreshVentas]);
+
+  // Save venta to Google Sheets
+  const saveVentaToSheet = useCallback(async (payload: Record<string, any>) => {
+    try {
+      await postVentaToSheet(payload);
+      toast.success('Venta guardada en Google Sheets');
+      await refreshVentas();
+    } catch (err) {
+      console.error('Error saving venta to Sheets:', err);
+      toast.error('Error al guardar en Google Sheets. La venta se guardó localmente.');
+    }
+  }, [refreshVentas]);
 
   const addAgente = (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => {
     const now = new Date().toISOString();
@@ -130,9 +261,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <DataContext.Provider value={{
       agentes, historialComisiones, ventas, pagosComision,
+      sheetAgentes, loadingAgentes, loadingVentas,
       addAgente, updateAgente, addHistorial, getHistorialByAgente,
       addVenta, updateVenta, deleteVenta, getAgenteById, getVentaById,
-      addPagoComision, getPagosByVenta,
+      addPagoComision, getPagosByVenta, saveVentaToSheet, refreshVentas, refreshAgentes,
     }}>
       {children}
     </DataContext.Provider>

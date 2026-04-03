@@ -21,12 +21,20 @@ function needsPrecioM2(tipo: string) {
 const SaleForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { agentes, historialComisiones, addVenta, updateVenta, getVentaById } = useData();
+  const { agentes, historialComisiones, addVenta, updateVenta, getVentaById, sheetAgentes, loadingAgentes, saveVentaToSheet } = useData();
   const { isCeo, user } = useAuth();
   const isEdit = !!id;
   const existing = id ? getVentaById(id) : null;
+  const [saving, setSaving] = useState(false);
 
   const activeAgentes = agentes.filter(a => a.activo);
+
+  // Helper: get split from sheetAgentes (primary) or fall back to historial
+  const getSheetSplit = (agenteId: string) => {
+    const sa = sheetAgentes.find(a => a.id_agente === agenteId);
+    if (sa) return { porcentaje_asesor: sa.porcentaje_asesor, porcentaje_empresa: sa.porcentaje_empresa };
+    return null;
+  };
 
   const [form, setForm] = useState({
     tipo_ingreso: existing?.tipo_ingreso ?? 'Venta directa',
@@ -72,38 +80,53 @@ const SaleForm = () => {
 
   const [error, setError] = useState('');
 
-  // Auto-load split when vendedor changes
+  // Auto-load split when vendedor changes (prefer sheetAgentes)
   useEffect(() => {
     if (form.vendedor_id && !form.override_split_vendedor) {
-      const hist = historialComisiones.filter(h => h.agente_id === form.vendedor_id);
-      const split = getSplitVigenteByDate(hist, form.fecha_reserva);
-      if (split) {
-        setForm(f => ({ ...f, split_vendedor_asesor: split.porcentaje_asesor, split_vendedor_empresa: split.porcentaje_empresa }));
+      const sheetSplit = getSheetSplit(form.vendedor_id);
+      if (sheetSplit) {
+        setForm(f => ({ ...f, split_vendedor_asesor: sheetSplit.porcentaje_asesor, split_vendedor_empresa: sheetSplit.porcentaje_empresa }));
+      } else {
+        const hist = historialComisiones.filter(h => h.agente_id === form.vendedor_id);
+        const split = getSplitVigenteByDate(hist, form.fecha_reserva);
+        if (split) {
+          setForm(f => ({ ...f, split_vendedor_asesor: split.porcentaje_asesor, split_vendedor_empresa: split.porcentaje_empresa }));
+        }
       }
     }
-  }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor]);
+  }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor, sheetAgentes]);
 
-  // Auto-load split when captador changes
+  // Auto-load split when captador changes (prefer sheetAgentes)
   useEffect(() => {
     if (form.captador_id && !form.override_split_captador) {
-      const hist = historialComisiones.filter(h => h.agente_id === form.captador_id);
-      const split = getSplitVigenteByDate(hist, form.fecha_reserva);
-      if (split) {
-        setForm(f => ({ ...f, split_captador_asesor: split.porcentaje_asesor, split_captador_empresa: split.porcentaje_empresa }));
+      const sheetSplit = getSheetSplit(form.captador_id);
+      if (sheetSplit) {
+        setForm(f => ({ ...f, split_captador_asesor: sheetSplit.porcentaje_asesor, split_captador_empresa: sheetSplit.porcentaje_empresa }));
+      } else {
+        const hist = historialComisiones.filter(h => h.agente_id === form.captador_id);
+        const split = getSplitVigenteByDate(hist, form.fecha_reserva);
+        if (split) {
+          setForm(f => ({ ...f, split_captador_asesor: split.porcentaje_asesor, split_captador_empresa: split.porcentaje_empresa }));
+        }
       }
     }
-  }, [form.captador_id, form.fecha_reserva, form.override_split_captador]);
+  }, [form.captador_id, form.fecha_reserva, form.override_split_captador, sheetAgentes]);
 
-  // Auto-load split for asistencia agent
+  // Auto-load split for asistencia agent (prefer sheetAgentes)
   useEffect(() => {
     if (form.asistencia_agente_id) {
-      const hist = historialComisiones.filter(h => h.agente_id === form.asistencia_agente_id);
-      const split = getSplitVigenteByDate(hist, form.fecha_reserva);
-      if (split) {
-        setForm(f => ({ ...f, split_asistencia_asesor: split.porcentaje_asesor, split_asistencia_empresa: split.porcentaje_empresa }));
+      const sheetSplit = getSheetSplit(form.asistencia_agente_id);
+      if (sheetSplit) {
+        setForm(f => ({ ...f, split_asistencia_asesor: sheetSplit.porcentaje_asesor, split_asistencia_empresa: sheetSplit.porcentaje_empresa }));
+      } else {
+        const hist = historialComisiones.filter(h => h.agente_id === form.asistencia_agente_id);
+        const split = getSplitVigenteByDate(hist, form.fecha_reserva);
+        if (split) {
+          setForm(f => ({ ...f, split_asistencia_asesor: split.porcentaje_asesor, split_asistencia_empresa: split.porcentaje_empresa }));
+        }
       }
     }
-  }, [form.asistencia_agente_id, form.fecha_reserva]);
+  }, [form.asistencia_agente_id, form.fecha_reserva, sheetAgentes]);
 
   const tieneAsistencia = !!form.asistencia_agente_id;
 
@@ -141,7 +164,7 @@ const SaleForm = () => {
 
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -151,6 +174,8 @@ const SaleForm = () => {
     if (form.porcentaje_comision_venta < 0 || form.porcentaje_captador < 0 || form.porcentaje_referido < 0) { setError('Los porcentajes no pueden ser negativos'); return; }
     if (calculo.vendedor_bruto < 0) { setError('Los porcentajes de captador y referido hacen que el monto del vendedor sea negativo'); return; }
     if (tieneAsistencia && (form.porcentaje_asistencia <= 0 || form.porcentaje_asistencia > 100)) { setError('El porcentaje de asistencia debe ser entre 1 y 100'); return; }
+
+    setSaving(true);
 
     const ventaData: Omit<Venta, 'id' | 'created_at' | 'updated_at'> = {
       tipo_ingreso: form.tipo_ingreso,
@@ -186,16 +211,13 @@ const SaleForm = () => {
       monto_referido: calculo.monto_referido,
       monto_empresa_total: calculo.empresa_total,
       creado_por: user?.id ?? '',
-      // Dynamic property fields
       habitaciones: needsHabMetraje(form.tipo_inmueble) ? form.habitaciones : undefined,
       metraje: needsHabMetraje(form.tipo_inmueble) ? form.metraje : undefined,
       precio_por_m2: needsPrecioM2(form.tipo_inmueble) ? form.precio_por_m2 : undefined,
-      // Assistance
       asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : null,
       porcentaje_asistencia: tieneAsistencia ? form.porcentaje_asistencia : 0,
       monto_asistencia_agente: calculo.asistencia_agente ?? 0,
       monto_asistencia_empresa: calculo.asistencia_empresa ?? 0,
-      // Payment tracking
       tipo_pago_comision: form.tipo_pago_comision,
       monto_total_comision_a_pagar: montoTotalComision,
       monto_pagado_comision: paymentInfo.monto_pagado,
@@ -207,14 +229,63 @@ const SaleForm = () => {
       notas_pago_comision: form.notas_pago_comision,
     };
 
-    if (isEdit && existing) {
-      updateVenta(existing.id, ventaData);
-      navigate(`/ventas/${existing.id}`);
-    } else {
-      const newV = addVenta(ventaData);
-      navigate(`/ventas/${newV.id}`);
+    // Build Google Sheets payload
+    const sheetPayload = {
+      fecha_reserva: form.fecha_reserva,
+      fecha_cierre: form.fecha_cierre || '',
+      cliente: form.cliente,
+      telefono: form.telefono,
+      email: form.email,
+      proyecto: form.proyecto,
+      unidad: form.unidad,
+      tipo_inmueble: form.tipo_inmueble,
+      habitaciones: String(form.habitaciones || ''),
+      metraje: String(form.metraje || ''),
+      precio_m2: String(form.precio_por_m2 || ''),
+      m2_total: String(form.metraje || ''),
+      precio_usd: String(form.precio_usd),
+      tasa: String(form.tasa),
+      precio_rd: String(calculo.precio_rd),
+      porcentaje_comision: String(form.porcentaje_comision_venta),
+      comision_bruta: String(calculo.comision_bruta),
+      vendedor_id: form.vendedor_id,
+      captador_id: form.captador_id || '',
+      porcentaje_captador: String(form.porcentaje_captador),
+      referido_porcentaje: String(form.porcentaje_referido),
+      asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : '',
+      porcentaje_asistencia: String(tieneAsistencia ? form.porcentaje_asistencia : ''),
+      tipo_pago_comision: form.tipo_pago_comision,
+      fecha_pago_1: form.tipo_pago_comision === 'unico' ? (form.fecha_pago_unico || '') : (form.fecha_pago_1 || ''),
+      fecha_pago_2: form.tipo_pago_comision === 'parcial' ? (form.fecha_pago_2 || '') : '',
+      estado_venta: form.estado,
+    };
+
+    try {
+      if (isEdit && existing) {
+        updateVenta(existing.id, ventaData);
+        navigate(`/ventas/${existing.id}`);
+      } else {
+        // Save locally
+        const newV = addVenta(ventaData);
+        // Also save to Google Sheets
+        await saveVentaToSheet(sheetPayload);
+        navigate(`/ventas/${newV.id}`);
+      }
+    } catch (err) {
+      console.error('Error saving:', err);
+    } finally {
+      setSaving(false);
     }
   };
+
+  if (loadingAgentes) {
+    return (
+      <div className="animate-fade-in flex items-center justify-center py-20">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mr-3" />
+        <span className="text-muted-foreground">Cargando agentes desde Google Sheets...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -475,7 +546,10 @@ const SaleForm = () => {
           {error && <p className="text-destructive text-sm">{error}</p>}
 
           <div className="flex gap-2">
-            <Button type="submit">{isEdit ? 'Guardar Cambios' : 'Registrar Venta'}</Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2 inline-block" />}
+              {isEdit ? 'Guardar Cambios' : 'Registrar Venta'}
+            </Button>
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancelar</Button>
           </div>
         </div>
