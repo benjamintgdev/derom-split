@@ -389,31 +389,67 @@ const SaleForm = () => {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unico">Pago único</SelectItem>
-                    <SelectItem value="parcial">Pago parcial</SelectItem>
+                    <SelectItem value="parcial">Pago en 2 partes (50/50)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs">Monto Total Comisión a Pagar</Label>
+                <Label className="text-xs">Monto Total Comisión</Label>
                 <Input value={formatCurrency(montoTotalComision)} readOnly className="bg-muted/50 font-semibold" />
               </div>
-              <NumField label="Monto Pagado" value={form.monto_pagado_comision} onChange={handlePagadoChange} step={0.01} />
-              <NumField label="% Pagado" value={form.porcentaje_pagado_comision} onChange={handlePorcentajePagadoChange} step={0.01} />
-              <div className="space-y-2">
-                <Label className="text-xs">Balance Pendiente</Label>
-                <Input value={formatCurrency(Math.max(0, balancePendiente))} readOnly className="bg-muted/50 font-semibold" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Estado de Pago</Label>
-                <Input
-                  value={form.estado_pago_comision === 'pendiente' ? 'Pendiente' : form.estado_pago_comision === 'parcial' ? 'Parcial' : 'Pagada'}
-                  readOnly
-                  className={`bg-muted/50 font-semibold ${form.estado_pago_comision === 'pagada' ? 'text-primary' : form.estado_pago_comision === 'parcial' ? 'text-amber-600' : 'text-muted-foreground'}`}
-                />
-              </div>
-              <Field label="Fecha Primer Pago" value={form.fecha_primer_pago_comision} onChange={v => set('fecha_primer_pago_comision', v)} type="date" />
-              <Field label="Fecha Próximo Pago" value={form.fecha_proximo_pago_comision} onChange={v => set('fecha_proximo_pago_comision', v)} type="date" />
             </div>
+
+            {form.tipo_pago_comision === 'unico' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Fecha de Pago" value={form.fecha_pago_unico} onChange={v => set('fecha_pago_unico', v)} type="date" />
+                <div className="space-y-2">
+                  <Label className="text-xs">Estado</Label>
+                  <Select value={form.estado_pago_1} onValueChange={v => set('estado_pago_1', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="pagado">Pagado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Pago 1 — {formatCurrency(montoTotalComision / 2)}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Fecha Pago 1" value={form.fecha_pago_1} onChange={v => set('fecha_pago_1', v)} type="date" />
+                    <div className="space-y-2">
+                      <Label className="text-xs">Estado</Label>
+                      <Select value={form.estado_pago_1} onValueChange={v => set('estado_pago_1', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="pagado">Pagado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Pago 2 — {formatCurrency(montoTotalComision / 2)}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Fecha Pago 2" value={form.fecha_pago_2} onChange={v => set('fecha_pago_2', v)} type="date" />
+                    <div className="space-y-2">
+                      <Label className="text-xs">Estado</Label>
+                      <Select value={form.estado_pago_2} onValueChange={v => set('estado_pago_2', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="pagado">Pagado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-xs">Notas de Pago</Label>
               <textarea
