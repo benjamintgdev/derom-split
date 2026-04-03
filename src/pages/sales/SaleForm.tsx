@@ -80,16 +80,21 @@ const SaleForm = () => {
 
   const [error, setError] = useState('');
 
-  // Auto-load split when vendedor changes
+  // Auto-load split when vendedor changes (prefer sheetAgentes)
   useEffect(() => {
     if (form.vendedor_id && !form.override_split_vendedor) {
-      const hist = historialComisiones.filter(h => h.agente_id === form.vendedor_id);
-      const split = getSplitVigenteByDate(hist, form.fecha_reserva);
-      if (split) {
-        setForm(f => ({ ...f, split_vendedor_asesor: split.porcentaje_asesor, split_vendedor_empresa: split.porcentaje_empresa }));
+      const sheetSplit = getSheetSplit(form.vendedor_id);
+      if (sheetSplit) {
+        setForm(f => ({ ...f, split_vendedor_asesor: sheetSplit.porcentaje_asesor, split_vendedor_empresa: sheetSplit.porcentaje_empresa }));
+      } else {
+        const hist = historialComisiones.filter(h => h.agente_id === form.vendedor_id);
+        const split = getSplitVigenteByDate(hist, form.fecha_reserva);
+        if (split) {
+          setForm(f => ({ ...f, split_vendedor_asesor: split.porcentaje_asesor, split_vendedor_empresa: split.porcentaje_empresa }));
+        }
       }
     }
-  }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor]);
+  }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor, sheetAgentes]);
 
   // Auto-load split when captador changes
   useEffect(() => {
