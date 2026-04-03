@@ -125,31 +125,21 @@ const SaleForm = () => {
 
   // Payment calculations
   const montoTotalComision = calculo.vendedor_agente;
-  const balancePendiente = montoTotalComision - form.monto_pagado_comision;
+
+  const computePaymentData = () => {
+    if (form.tipo_pago_comision === 'unico') {
+      const pagado = form.estado_pago_1 === 'pagado' ? montoTotalComision : 0;
+      return { monto_pagado: pagado, balance: montoTotalComision - pagado, estado: form.estado_pago_1 === 'pagado' ? 'pagada' as const : 'pendiente' as const };
+    }
+    const mitad = montoTotalComision / 2;
+    const pagado = (form.estado_pago_1 === 'pagado' ? mitad : 0) + (form.estado_pago_2 === 'pagado' ? mitad : 0);
+    const estado = pagado >= montoTotalComision ? 'pagada' as const : pagado > 0 ? 'parcial' as const : 'pendiente' as const;
+    return { monto_pagado: pagado, balance: montoTotalComision - pagado, estado };
+  };
+
+  const paymentInfo = computePaymentData();
 
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
-
-  const handlePagadoChange = (monto: number) => {
-    const clamped = Math.min(Math.max(0, monto), montoTotalComision);
-    const pct = montoTotalComision > 0 ? (clamped / montoTotalComision) * 100 : 0;
-    setForm(f => ({
-      ...f,
-      monto_pagado_comision: clamped,
-      porcentaje_pagado_comision: Math.round(pct * 100) / 100,
-      estado_pago_comision: clamped <= 0 ? 'pendiente' : clamped >= montoTotalComision ? 'pagada' : 'parcial',
-    }));
-  };
-
-  const handlePorcentajePagadoChange = (pct: number) => {
-    const clampedPct = Math.min(Math.max(0, pct), 100);
-    const monto = montoTotalComision * (clampedPct / 100);
-    setForm(f => ({
-      ...f,
-      porcentaje_pagado_comision: clampedPct,
-      monto_pagado_comision: Math.round(monto * 100) / 100,
-      estado_pago_comision: clampedPct <= 0 ? 'pendiente' : clampedPct >= 100 ? 'pagada' : 'parcial',
-    }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
