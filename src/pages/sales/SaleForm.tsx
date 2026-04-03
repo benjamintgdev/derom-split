@@ -53,22 +53,20 @@ const SaleForm = () => {
     split_captador_empresa: existing?.split_captador_empresa_aplicado ?? 50,
     override_split_vendedor: existing?.override_split_vendedor ?? false,
     override_split_captador: existing?.override_split_captador ?? false,
-    // Dynamic property fields
     habitaciones: existing?.habitaciones ?? 0,
     metraje: existing?.metraje ?? 0,
     precio_por_m2: existing?.precio_por_m2 ?? 0,
-    // Assistance
     asistencia_agente_id: existing?.asistencia_agente_id ?? '',
     porcentaje_asistencia: existing?.porcentaje_asistencia ?? 50,
     split_asistencia_asesor: 50,
     split_asistencia_empresa: 50,
-    // Payment info
+    // Simplified payment info
     tipo_pago_comision: (existing?.tipo_pago_comision ?? 'unico') as TipoPagoComision,
-    monto_pagado_comision: existing?.monto_pagado_comision ?? 0,
-    porcentaje_pagado_comision: existing?.porcentaje_pagado_comision ?? 0,
-    fecha_primer_pago_comision: existing?.fecha_primer_pago_comision ?? '',
-    fecha_proximo_pago_comision: existing?.fecha_proximo_pago_comision ?? '',
-    estado_pago_comision: (existing?.estado_pago_comision ?? 'pendiente') as EstadoPagoComision,
+    fecha_pago_unico: existing?.fecha_primer_pago_comision ?? '',
+    fecha_pago_1: existing?.fecha_primer_pago_comision ?? '',
+    fecha_pago_2: existing?.fecha_proximo_pago_comision ?? '',
+    estado_pago_1: (existing?.estado_pago_comision === 'pagada' ? 'pagado' : 'pendiente') as 'pendiente' | 'pagado',
+    estado_pago_2: (existing?.monto_pagado_comision && existing?.monto_total_comision_a_pagar && existing.monto_pagado_comision >= existing.monto_total_comision_a_pagar ? 'pagado' : 'pendiente') as 'pendiente' | 'pagado',
     notas_pago_comision: existing?.notas_pago_comision ?? '',
   });
 
@@ -127,31 +125,21 @@ const SaleForm = () => {
 
   // Payment calculations
   const montoTotalComision = calculo.vendedor_agente;
-  const balancePendiente = montoTotalComision - form.monto_pagado_comision;
+
+  const computePaymentData = () => {
+    if (form.tipo_pago_comision === 'unico') {
+      const pagado = form.estado_pago_1 === 'pagado' ? montoTotalComision : 0;
+      return { monto_pagado: pagado, balance: montoTotalComision - pagado, estado: form.estado_pago_1 === 'pagado' ? 'pagada' as const : 'pendiente' as const };
+    }
+    const mitad = montoTotalComision / 2;
+    const pagado = (form.estado_pago_1 === 'pagado' ? mitad : 0) + (form.estado_pago_2 === 'pagado' ? mitad : 0);
+    const estado = pagado >= montoTotalComision ? 'pagada' as const : pagado > 0 ? 'parcial' as const : 'pendiente' as const;
+    return { monto_pagado: pagado, balance: montoTotalComision - pagado, estado };
+  };
+
+  const paymentInfo = computePaymentData();
 
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
-
-  const handlePagadoChange = (monto: number) => {
-    const clamped = Math.min(Math.max(0, monto), montoTotalComision);
-    const pct = montoTotalComision > 0 ? (clamped / montoTotalComision) * 100 : 0;
-    setForm(f => ({
-      ...f,
-      monto_pagado_comision: clamped,
-      porcentaje_pagado_comision: Math.round(pct * 100) / 100,
-      estado_pago_comision: clamped <= 0 ? 'pendiente' : clamped >= montoTotalComision ? 'pagada' : 'parcial',
-    }));
-  };
-
-  const handlePorcentajePagadoChange = (pct: number) => {
-    const clampedPct = Math.min(Math.max(0, pct), 100);
-    const monto = montoTotalComision * (clampedPct / 100);
-    setForm(f => ({
-      ...f,
-      porcentaje_pagado_comision: clampedPct,
-      monto_pagado_comision: Math.round(monto * 100) / 100,
-      estado_pago_comision: clampedPct <= 0 ? 'pendiente' : clampedPct >= 100 ? 'pagada' : 'parcial',
-    }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,12 +198,12 @@ const SaleForm = () => {
       // Payment tracking
       tipo_pago_comision: form.tipo_pago_comision,
       monto_total_comision_a_pagar: montoTotalComision,
-      monto_pagado_comision: form.monto_pagado_comision,
-      porcentaje_pagado_comision: form.porcentaje_pagado_comision,
-      balance_pendiente_comision: balancePendiente,
-      fecha_primer_pago_comision: form.fecha_primer_pago_comision || undefined,
-      fecha_proximo_pago_comision: form.fecha_proximo_pago_comision || undefined,
-      estado_pago_comision: form.estado_pago_comision,
+      monto_pagado_comision: paymentInfo.monto_pagado,
+      porcentaje_pagado_comision: montoTotalComision > 0 ? (paymentInfo.monto_pagado / montoTotalComision) * 100 : 0,
+      balance_pendiente_comision: paymentInfo.balance,
+      fecha_primer_pago_comision: form.tipo_pago_comision === 'unico' ? form.fecha_pago_unico || undefined : form.fecha_pago_1 || undefined,
+      fecha_proximo_pago_comision: form.tipo_pago_comision === 'parcial' ? form.fecha_pago_2 || undefined : undefined,
+      estado_pago_comision: paymentInfo.estado,
       notas_pago_comision: form.notas_pago_comision,
     };
 
@@ -401,31 +389,67 @@ const SaleForm = () => {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unico">Pago único</SelectItem>
-                    <SelectItem value="parcial">Pago parcial</SelectItem>
+                    <SelectItem value="parcial">Pago en 2 partes (50/50)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs">Monto Total Comisión a Pagar</Label>
+                <Label className="text-xs">Monto Total Comisión</Label>
                 <Input value={formatCurrency(montoTotalComision)} readOnly className="bg-muted/50 font-semibold" />
               </div>
-              <NumField label="Monto Pagado" value={form.monto_pagado_comision} onChange={handlePagadoChange} step={0.01} />
-              <NumField label="% Pagado" value={form.porcentaje_pagado_comision} onChange={handlePorcentajePagadoChange} step={0.01} />
-              <div className="space-y-2">
-                <Label className="text-xs">Balance Pendiente</Label>
-                <Input value={formatCurrency(Math.max(0, balancePendiente))} readOnly className="bg-muted/50 font-semibold" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Estado de Pago</Label>
-                <Input
-                  value={form.estado_pago_comision === 'pendiente' ? 'Pendiente' : form.estado_pago_comision === 'parcial' ? 'Parcial' : 'Pagada'}
-                  readOnly
-                  className={`bg-muted/50 font-semibold ${form.estado_pago_comision === 'pagada' ? 'text-primary' : form.estado_pago_comision === 'parcial' ? 'text-amber-600' : 'text-muted-foreground'}`}
-                />
-              </div>
-              <Field label="Fecha Primer Pago" value={form.fecha_primer_pago_comision} onChange={v => set('fecha_primer_pago_comision', v)} type="date" />
-              <Field label="Fecha Próximo Pago" value={form.fecha_proximo_pago_comision} onChange={v => set('fecha_proximo_pago_comision', v)} type="date" />
             </div>
+
+            {form.tipo_pago_comision === 'unico' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Fecha de Pago" value={form.fecha_pago_unico} onChange={v => set('fecha_pago_unico', v)} type="date" />
+                <div className="space-y-2">
+                  <Label className="text-xs">Estado</Label>
+                  <Select value={form.estado_pago_1} onValueChange={v => set('estado_pago_1', v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="pagado">Pagado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Pago 1 — {formatCurrency(montoTotalComision / 2)}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Fecha Pago 1" value={form.fecha_pago_1} onChange={v => set('fecha_pago_1', v)} type="date" />
+                    <div className="space-y-2">
+                      <Label className="text-xs">Estado</Label>
+                      <Select value={form.estado_pago_1} onValueChange={v => set('estado_pago_1', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="pagado">Pagado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Pago 2 — {formatCurrency(montoTotalComision / 2)}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Fecha Pago 2" value={form.fecha_pago_2} onChange={v => set('fecha_pago_2', v)} type="date" />
+                    <div className="space-y-2">
+                      <Label className="text-xs">Estado</Label>
+                      <Select value={form.estado_pago_2} onValueChange={v => set('estado_pago_2', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="pagado">Pagado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-xs">Notas de Pago</Label>
               <textarea
@@ -594,11 +618,17 @@ const SaleForm = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Pagado</span>
-                  <span className="font-medium">{formatCurrency(form.monto_pagado_comision)}</span>
+                  <span className="font-medium">{formatCurrency(paymentInfo.monto_pagado)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Pendiente</span>
-                  <span className="font-bold text-primary">{formatCurrency(Math.max(0, balancePendiente))}</span>
+                  <span className="font-bold text-primary">{formatCurrency(Math.max(0, paymentInfo.balance))}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-1 border-t">
+                  <span className="text-muted-foreground">Estado</span>
+                  <span className={`font-semibold ${paymentInfo.estado === 'pagada' ? 'text-primary' : paymentInfo.estado === 'parcial' ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    {paymentInfo.estado === 'pagada' ? 'Pagada' : paymentInfo.estado === 'parcial' ? 'Parcial' : 'Pendiente'}
+                  </span>
                 </div>
               </div>
             </div>
