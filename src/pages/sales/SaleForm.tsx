@@ -164,7 +164,7 @@ const SaleForm = () => {
 
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -174,6 +174,8 @@ const SaleForm = () => {
     if (form.porcentaje_comision_venta < 0 || form.porcentaje_captador < 0 || form.porcentaje_referido < 0) { setError('Los porcentajes no pueden ser negativos'); return; }
     if (calculo.vendedor_bruto < 0) { setError('Los porcentajes de captador y referido hacen que el monto del vendedor sea negativo'); return; }
     if (tieneAsistencia && (form.porcentaje_asistencia <= 0 || form.porcentaje_asistencia > 100)) { setError('El porcentaje de asistencia debe ser entre 1 y 100'); return; }
+
+    setSaving(true);
 
     const ventaData: Omit<Venta, 'id' | 'created_at' | 'updated_at'> = {
       tipo_ingreso: form.tipo_ingreso,
@@ -209,16 +211,13 @@ const SaleForm = () => {
       monto_referido: calculo.monto_referido,
       monto_empresa_total: calculo.empresa_total,
       creado_por: user?.id ?? '',
-      // Dynamic property fields
       habitaciones: needsHabMetraje(form.tipo_inmueble) ? form.habitaciones : undefined,
       metraje: needsHabMetraje(form.tipo_inmueble) ? form.metraje : undefined,
       precio_por_m2: needsPrecioM2(form.tipo_inmueble) ? form.precio_por_m2 : undefined,
-      // Assistance
       asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : null,
       porcentaje_asistencia: tieneAsistencia ? form.porcentaje_asistencia : 0,
       monto_asistencia_agente: calculo.asistencia_agente ?? 0,
       monto_asistencia_empresa: calculo.asistencia_empresa ?? 0,
-      // Payment tracking
       tipo_pago_comision: form.tipo_pago_comision,
       monto_total_comision_a_pagar: montoTotalComision,
       monto_pagado_comision: paymentInfo.monto_pagado,
@@ -230,12 +229,52 @@ const SaleForm = () => {
       notas_pago_comision: form.notas_pago_comision,
     };
 
-    if (isEdit && existing) {
-      updateVenta(existing.id, ventaData);
-      navigate(`/ventas/${existing.id}`);
-    } else {
-      const newV = addVenta(ventaData);
-      navigate(`/ventas/${newV.id}`);
+    // Build Google Sheets payload
+    const sheetPayload = {
+      fecha_reserva: form.fecha_reserva,
+      fecha_cierre: form.fecha_cierre || '',
+      cliente: form.cliente,
+      telefono: form.telefono,
+      email: form.email,
+      proyecto: form.proyecto,
+      unidad: form.unidad,
+      tipo_inmueble: form.tipo_inmueble,
+      habitaciones: String(form.habitaciones || ''),
+      metraje: String(form.metraje || ''),
+      precio_m2: String(form.precio_por_m2 || ''),
+      m2_total: String(form.metraje || ''),
+      precio_usd: String(form.precio_usd),
+      tasa: String(form.tasa),
+      precio_rd: String(calculo.precio_rd),
+      porcentaje_comision: String(form.porcentaje_comision_venta),
+      comision_bruta: String(calculo.comision_bruta),
+      vendedor_id: form.vendedor_id,
+      captador_id: form.captador_id || '',
+      porcentaje_captador: String(form.porcentaje_captador),
+      referido_porcentaje: String(form.porcentaje_referido),
+      asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : '',
+      porcentaje_asistencia: String(tieneAsistencia ? form.porcentaje_asistencia : ''),
+      tipo_pago_comision: form.tipo_pago_comision,
+      fecha_pago_1: form.tipo_pago_comision === 'unico' ? (form.fecha_pago_unico || '') : (form.fecha_pago_1 || ''),
+      fecha_pago_2: form.tipo_pago_comision === 'parcial' ? (form.fecha_pago_2 || '') : '',
+      estado_venta: form.estado,
+    };
+
+    try {
+      if (isEdit && existing) {
+        updateVenta(existing.id, ventaData);
+        navigate(`/ventas/${existing.id}`);
+      } else {
+        // Save locally
+        const newV = addVenta(ventaData);
+        // Also save to Google Sheets
+        await saveVentaToSheet(sheetPayload);
+        navigate(`/ventas/${newV.id}`);
+      }
+    } catch (err) {
+      console.error('Error saving:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
