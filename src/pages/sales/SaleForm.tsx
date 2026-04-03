@@ -96,16 +96,21 @@ const SaleForm = () => {
     }
   }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor, sheetAgentes]);
 
-  // Auto-load split when captador changes
+  // Auto-load split when captador changes (prefer sheetAgentes)
   useEffect(() => {
     if (form.captador_id && !form.override_split_captador) {
-      const hist = historialComisiones.filter(h => h.agente_id === form.captador_id);
-      const split = getSplitVigenteByDate(hist, form.fecha_reserva);
-      if (split) {
-        setForm(f => ({ ...f, split_captador_asesor: split.porcentaje_asesor, split_captador_empresa: split.porcentaje_empresa }));
+      const sheetSplit = getSheetSplit(form.captador_id);
+      if (sheetSplit) {
+        setForm(f => ({ ...f, split_captador_asesor: sheetSplit.porcentaje_asesor, split_captador_empresa: sheetSplit.porcentaje_empresa }));
+      } else {
+        const hist = historialComisiones.filter(h => h.agente_id === form.captador_id);
+        const split = getSplitVigenteByDate(hist, form.fecha_reserva);
+        if (split) {
+          setForm(f => ({ ...f, split_captador_asesor: split.porcentaje_asesor, split_captador_empresa: split.porcentaje_empresa }));
+        }
       }
     }
-  }, [form.captador_id, form.fecha_reserva, form.override_split_captador]);
+  }, [form.captador_id, form.fecha_reserva, form.override_split_captador, sheetAgentes]);
 
   // Auto-load split for asistencia agent
   useEffect(() => {
