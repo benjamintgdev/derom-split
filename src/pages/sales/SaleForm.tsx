@@ -21,12 +21,20 @@ function needsPrecioM2(tipo: string) {
 const SaleForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { agentes, historialComisiones, addVenta, updateVenta, getVentaById } = useData();
+  const { agentes, historialComisiones, addVenta, updateVenta, getVentaById, sheetAgentes, loadingAgentes, saveVentaToSheet } = useData();
   const { isCeo, user } = useAuth();
   const isEdit = !!id;
   const existing = id ? getVentaById(id) : null;
+  const [saving, setSaving] = useState(false);
 
   const activeAgentes = agentes.filter(a => a.activo);
+
+  // Helper: get split from sheetAgentes (primary) or fall back to historial
+  const getSheetSplit = (agenteId: string) => {
+    const sa = sheetAgentes.find(a => a.id_agente === agenteId);
+    if (sa) return { porcentaje_asesor: sa.porcentaje_asesor, porcentaje_empresa: sa.porcentaje_empresa };
+    return null;
+  };
 
   const [form, setForm] = useState({
     tipo_ingreso: existing?.tipo_ingreso ?? 'Venta directa',
