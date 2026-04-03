@@ -618,11 +618,17 @@ const SaleForm = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Pagado</span>
-                  <span className="font-medium">{formatCurrency(form.monto_pagado_comision)}</span>
+                  <span className="font-medium">{formatCurrency(paymentInfo.monto_pagado)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Pendiente</span>
-                  <span className="font-bold text-primary">{formatCurrency(Math.max(0, balancePendiente))}</span>
+                  <span className="font-bold text-primary">{formatCurrency(Math.max(0, paymentInfo.balance))}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-1 border-t">
+                  <span className="text-muted-foreground">Estado</span>
+                  <span className={`font-semibold ${paymentInfo.estado === 'pagada' ? 'text-primary' : paymentInfo.estado === 'parcial' ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    {paymentInfo.estado === 'pagada' ? 'Pagada' : paymentInfo.estado === 'parcial' ? 'Parcial' : 'Pendiente'}
+                  </span>
                 </div>
               </div>
             </div>
