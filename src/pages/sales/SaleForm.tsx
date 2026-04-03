@@ -458,47 +458,149 @@ const SaleForm = () => {
 
         {/* Panel de cálculos en tiempo real */}
         <div className="space-y-4">
-          <div className="kpi-card sticky top-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-4">Resumen de Comisiones</h2>
-            <div className="space-y-3">
-              <CalcRow label="Comisión Bruta" value={calculo.comision_bruta} highlight />
-              <CalcRow label="Monto Referido" value={calculo.monto_referido} />
-              <hr className="border-border" />
-              <CalcRow label="Vendedor (Bruto)" value={calculo.vendedor_bruto} />
-              {tieneAsistencia ? (
-                <>
-                  <CalcRow label={`→ Vendedor (${100 - form.porcentaje_asistencia}%)`} value={calculo.vendedor_agente} sub />
-                  <CalcRow label="  → Agente" value={calculo.vendedor_agente_final ?? 0} sub />
-                  <CalcRow label="  → Empresa" value={calculo.vendedor_empresa} sub />
-                  <hr className="border-border" />
-                  <CalcRow label={`→ Asistencia (${form.porcentaje_asistencia}%)`} value={(calculo.asistencia_agente ?? 0) + (calculo.asistencia_empresa ?? 0)} sub />
-                  <CalcRow label="  → Agente" value={calculo.asistencia_agente ?? 0} sub />
-                  <CalcRow label="  → Empresa" value={calculo.asistencia_empresa ?? 0} sub />
-                </>
-              ) : (
-                <>
-                  <CalcRow label="→ Agente" value={calculo.vendedor_agente} sub />
-                  <CalcRow label="→ Empresa" value={calculo.vendedor_empresa} sub />
-                </>
-              )}
-              {form.captador_id && (
-                <>
-                  <hr className="border-border" />
-                  <CalcRow label="Captador (Bruto)" value={calculo.captador_bruto} />
-                  <CalcRow label="→ Agente" value={calculo.captador_agente} sub />
-                  <CalcRow label="→ Empresa" value={calculo.captador_empresa} sub />
-                </>
-              )}
-              <hr className="border-border" />
-              <CalcRow label="Total Empresa" value={calculo.empresa_total} highlight />
+          <div className="sticky top-4 space-y-3">
+            {/* SECCIÓN 1: RESUMEN GENERAL */}
+            <div className="kpi-card">
+              <h2 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground mb-3">Resumen General</h2>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Comisión Bruta</span>
+                  <span className="text-base font-bold text-primary">{formatCurrency(calculo.comision_bruta)}</span>
+                </div>
+                {calculo.monto_referido > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Referido</span>
+                    <span className="text-sm font-medium">{formatCurrency(calculo.monto_referido)}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Payment summary */}
-            <div className="mt-6 pt-4 border-t border-border space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado de Pago</h3>
-              <CalcRow label="Total a Pagar" value={montoTotalComision} />
-              <CalcRow label="Pagado" value={form.monto_pagado_comision} />
-              <CalcRow label="Pendiente" value={Math.max(0, balancePendiente)} highlight />
+            {/* SECCIÓN 2: VENDEDOR */}
+            {(() => {
+              const vendedorAgent = activeAgentes.find(a => a.id === form.vendedor_id);
+              const vendedorName = vendedorAgent?.nombre || 'Vendedor';
+              const vendedorComisionAsignada = tieneAsistencia
+                ? calculo.vendedor_bruto * ((100 - form.porcentaje_asistencia) / 100)
+                : calculo.vendedor_bruto;
+              return (
+                <div className="kpi-card">
+                  <h2 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground mb-3">Vendedor</h2>
+                  {/* Vendedor block */}
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">{vendedorName.charAt(0)}</span>
+                      </div>
+                      <span className="text-sm font-semibold">{vendedorName}</span>
+                      {tieneAsistencia && (
+                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{100 - form.porcentaje_asistencia}%</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Comisión asignada</span>
+                      <span className="font-medium">{formatCurrency(vendedorComisionAsignada)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Gana (asesor)</span>
+                      <span className="font-semibold text-primary">{formatCurrency(calculo.vendedor_agente_final ?? calculo.vendedor_agente)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Empresa</span>
+                      <span>{formatCurrency(calculo.vendedor_empresa)}</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground text-right">Split {form.split_vendedor_asesor}/{form.split_vendedor_empresa}</div>
+                  </div>
+
+                  {/* Asistencia block */}
+                  {tieneAsistencia && (() => {
+                    const asisAgent = activeAgentes.find(a => a.id === form.asistencia_agente_id);
+                    const asisName = asisAgent?.nombre || 'Asistente';
+                    const asisComisionAsignada = calculo.vendedor_bruto * (form.porcentaje_asistencia / 100);
+                    return (
+                      <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2 mt-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-7 h-7 rounded-full bg-accent/50 flex items-center justify-center">
+                            <span className="text-xs font-bold text-accent-foreground">{asisName.charAt(0)}</span>
+                          </div>
+                          <span className="text-sm font-semibold">{asisName}</span>
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">Asistencia · {form.porcentaje_asistencia}%</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Comisión asignada</span>
+                          <span className="font-medium">{formatCurrency(asisComisionAsignada)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Gana (asesor)</span>
+                          <span className="font-semibold text-primary">{formatCurrency(calculo.asistencia_agente ?? 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Empresa</span>
+                          <span>{formatCurrency(calculo.asistencia_empresa ?? 0)}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground text-right">Split {form.split_asistencia_asesor}/{form.split_asistencia_empresa}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })()}
+
+            {/* SECCIÓN 3: CAPTADOR */}
+            {form.captador_id && (() => {
+              const captadorAgent = activeAgentes.find(a => a.id === form.captador_id);
+              const captadorName = captadorAgent?.nombre || 'Captador';
+              return (
+                <div className="kpi-card">
+                  <h2 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground mb-3">Captador</h2>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">{captadorName.charAt(0)}</span>
+                      </div>
+                      <span className="text-sm font-semibold">{captadorName}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Comisión asignada</span>
+                      <span className="font-medium">{formatCurrency(calculo.captador_bruto)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Gana (asesor)</span>
+                      <span className="font-semibold text-primary">{formatCurrency(calculo.captador_agente)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Empresa</span>
+                      <span>{formatCurrency(calculo.captador_empresa)}</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground text-right">Split {form.split_captador_asesor}/{form.split_captador_empresa}</div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* SECCIÓN 4: TOTAL EMPRESA */}
+            <div className="kpi-card">
+              <h2 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground mb-2">Total Empresa</h2>
+              <div className="text-xl font-bold text-primary">{formatCurrency(calculo.empresa_total)}</div>
+            </div>
+
+            {/* SECCIÓN 5: ESTADO DE PAGO */}
+            <div className="kpi-card">
+              <h2 className="font-semibold text-xs uppercase tracking-widest text-muted-foreground mb-3">Estado de Pago</h2>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total a Pagar</span>
+                  <span className="font-medium">{formatCurrency(montoTotalComision)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pagado</span>
+                  <span className="font-medium">{formatCurrency(form.monto_pagado_comision)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pendiente</span>
+                  <span className="font-bold text-primary">{formatCurrency(Math.max(0, balancePendiente))}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
