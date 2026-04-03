@@ -546,7 +546,10 @@ const SaleForm = () => {
           {error && <p className="text-destructive text-sm">{error}</p>}
 
           <div className="flex gap-2">
-            <Button type="submit">{isEdit ? 'Guardar Cambios' : 'Registrar Venta'}</Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2 inline-block" />}
+              {isEdit ? 'Guardar Cambios' : 'Registrar Venta'}
+            </Button>
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancelar</Button>
           </div>
         </div>
