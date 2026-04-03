@@ -198,12 +198,12 @@ const SaleForm = () => {
       // Payment tracking
       tipo_pago_comision: form.tipo_pago_comision,
       monto_total_comision_a_pagar: montoTotalComision,
-      monto_pagado_comision: form.monto_pagado_comision,
-      porcentaje_pagado_comision: form.porcentaje_pagado_comision,
-      balance_pendiente_comision: balancePendiente,
-      fecha_primer_pago_comision: form.fecha_primer_pago_comision || undefined,
-      fecha_proximo_pago_comision: form.fecha_proximo_pago_comision || undefined,
-      estado_pago_comision: form.estado_pago_comision,
+      monto_pagado_comision: paymentInfo.monto_pagado,
+      porcentaje_pagado_comision: montoTotalComision > 0 ? (paymentInfo.monto_pagado / montoTotalComision) * 100 : 0,
+      balance_pendiente_comision: paymentInfo.balance,
+      fecha_primer_pago_comision: form.tipo_pago_comision === 'unico' ? form.fecha_pago_unico || undefined : form.fecha_pago_1 || undefined,
+      fecha_proximo_pago_comision: form.tipo_pago_comision === 'parcial' ? form.fecha_pago_2 || undefined : undefined,
+      estado_pago_comision: paymentInfo.estado,
       notas_pago_comision: form.notas_pago_comision,
     };
 
