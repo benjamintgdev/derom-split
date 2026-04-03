@@ -278,6 +278,15 @@ const SaleForm = () => {
     }
   };
 
+  if (loadingAgentes) {
+    return (
+      <div className="animate-fade-in flex items-center justify-center py-20">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mr-3" />
+        <span className="text-muted-foreground">Cargando agentes desde Google Sheets...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <h1 className="text-2xl font-semibold mb-6">{isEdit ? 'Editar Venta' : 'Nueva Venta'}</h1>
