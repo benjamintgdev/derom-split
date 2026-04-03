@@ -53,22 +53,20 @@ const SaleForm = () => {
     split_captador_empresa: existing?.split_captador_empresa_aplicado ?? 50,
     override_split_vendedor: existing?.override_split_vendedor ?? false,
     override_split_captador: existing?.override_split_captador ?? false,
-    // Dynamic property fields
     habitaciones: existing?.habitaciones ?? 0,
     metraje: existing?.metraje ?? 0,
     precio_por_m2: existing?.precio_por_m2 ?? 0,
-    // Assistance
     asistencia_agente_id: existing?.asistencia_agente_id ?? '',
     porcentaje_asistencia: existing?.porcentaje_asistencia ?? 50,
     split_asistencia_asesor: 50,
     split_asistencia_empresa: 50,
-    // Payment info
+    // Simplified payment info
     tipo_pago_comision: (existing?.tipo_pago_comision ?? 'unico') as TipoPagoComision,
-    monto_pagado_comision: existing?.monto_pagado_comision ?? 0,
-    porcentaje_pagado_comision: existing?.porcentaje_pagado_comision ?? 0,
-    fecha_primer_pago_comision: existing?.fecha_primer_pago_comision ?? '',
-    fecha_proximo_pago_comision: existing?.fecha_proximo_pago_comision ?? '',
-    estado_pago_comision: (existing?.estado_pago_comision ?? 'pendiente') as EstadoPagoComision,
+    fecha_pago_unico: existing?.fecha_primer_pago_comision ?? '',
+    fecha_pago_1: existing?.fecha_primer_pago_comision ?? '',
+    fecha_pago_2: existing?.fecha_proximo_pago_comision ?? '',
+    estado_pago_1: (existing?.estado_pago_comision === 'pagada' ? 'pagado' : 'pendiente') as 'pendiente' | 'pagado',
+    estado_pago_2: (existing?.monto_pagado_comision && existing?.monto_total_comision_a_pagar && existing.monto_pagado_comision >= existing.monto_total_comision_a_pagar ? 'pagado' : 'pendiente') as 'pendiente' | 'pagado',
     notas_pago_comision: existing?.notas_pago_comision ?? '',
   });
 
