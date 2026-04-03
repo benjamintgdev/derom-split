@@ -112,16 +112,21 @@ const SaleForm = () => {
     }
   }, [form.captador_id, form.fecha_reserva, form.override_split_captador, sheetAgentes]);
 
-  // Auto-load split for asistencia agent
+  // Auto-load split for asistencia agent (prefer sheetAgentes)
   useEffect(() => {
     if (form.asistencia_agente_id) {
-      const hist = historialComisiones.filter(h => h.agente_id === form.asistencia_agente_id);
-      const split = getSplitVigenteByDate(hist, form.fecha_reserva);
-      if (split) {
-        setForm(f => ({ ...f, split_asistencia_asesor: split.porcentaje_asesor, split_asistencia_empresa: split.porcentaje_empresa }));
+      const sheetSplit = getSheetSplit(form.asistencia_agente_id);
+      if (sheetSplit) {
+        setForm(f => ({ ...f, split_asistencia_asesor: sheetSplit.porcentaje_asesor, split_asistencia_empresa: sheetSplit.porcentaje_empresa }));
+      } else {
+        const hist = historialComisiones.filter(h => h.agente_id === form.asistencia_agente_id);
+        const split = getSplitVigenteByDate(hist, form.fecha_reserva);
+        if (split) {
+          setForm(f => ({ ...f, split_asistencia_asesor: split.porcentaje_asesor, split_asistencia_empresa: split.porcentaje_empresa }));
+        }
       }
     }
-  }, [form.asistencia_agente_id, form.fecha_reserva]);
+  }, [form.asistencia_agente_id, form.fecha_reserva, sheetAgentes]);
 
   const tieneAsistencia = !!form.asistencia_agente_id;
 
