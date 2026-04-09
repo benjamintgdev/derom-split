@@ -1,4 +1,4 @@
-const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyJo_GSf8bH8W0jSRJusXsSycot0ZDPYOtwWCYfFK8YaaL4czodxGb13WVEIoJ54dug-g/exec';
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxRYnbNOmFje44f-3gjWOfcXItFRZSxpVXBhcu9eCmzv3nx9wqy2hFAP5iEkK1O0_lS1w/exec';
 
 export interface SheetAgente {
   id_agente: string;
