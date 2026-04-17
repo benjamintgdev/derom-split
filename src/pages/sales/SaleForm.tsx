@@ -162,6 +162,19 @@ const SaleForm = () => {
 
   const paymentInfo = computePaymentData();
 
+  // Per-person payment breakdown reflecting parcial/único payments
+  const computePersonPayment = (montoTotal: number) => {
+    if (montoTotal <= 0) return { pagado: 0, pendiente: 0, estado: 'pendiente' as const };
+    if (form.tipo_pago_comision === 'unico') {
+      const pagado = form.estado_pago_1 === 'pagado' ? montoTotal : 0;
+      return { pagado, pendiente: montoTotal - pagado, estado: pagado >= montoTotal ? 'pagada' as const : 'pendiente' as const };
+    }
+    const mitad = montoTotal / 2;
+    const pagado = (form.estado_pago_1 === 'pagado' ? mitad : 0) + (form.estado_pago_2 === 'pagado' ? mitad : 0);
+    const estado = pagado >= montoTotal ? 'pagada' as const : pagado > 0 ? 'parcial' as const : 'pendiente' as const;
+    return { pagado, pendiente: montoTotal - pagado, estado };
+  };
+
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
