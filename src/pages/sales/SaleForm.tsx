@@ -162,6 +162,19 @@ const SaleForm = () => {
 
   const paymentInfo = computePaymentData();
 
+  // Per-person payment breakdown reflecting parcial/único payments
+  const computePersonPayment = (montoTotal: number) => {
+    if (montoTotal <= 0) return { pagado: 0, pendiente: 0, estado: 'pendiente' as const };
+    if (form.tipo_pago_comision === 'unico') {
+      const pagado = form.estado_pago_1 === 'pagado' ? montoTotal : 0;
+      return { pagado, pendiente: montoTotal - pagado, estado: pagado >= montoTotal ? 'pagada' as const : 'pendiente' as const };
+    }
+    const mitad = montoTotal / 2;
+    const pagado = (form.estado_pago_1 === 'pagado' ? mitad : 0) + (form.estado_pago_2 === 'pagado' ? mitad : 0);
+    const estado = pagado >= montoTotal ? 'pagada' as const : pagado > 0 ? 'parcial' as const : 'pendiente' as const;
+    return { pagado, pendiente: montoTotal - pagado, estado };
+  };
+
   const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -301,7 +314,7 @@ const SaleForm = () => {
               <Field label="Teléfono" value={form.telefono} onChange={v => set('telefono', v)} />
               <Field label="Email" value={form.email} onChange={v => set('email', v)} type="email" />
               <div className="space-y-2">
-                <Label className="text-xs">Tipo de Ingreso</Label>
+                <Label className="text-xs">Tipo de Venta</Label>
                 <Select value={form.tipo_ingreso} onValueChange={v => set('tipo_ingreso', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{TIPOS_INGRESO.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -627,6 +640,7 @@ const SaleForm = () => {
                       <span>{formatCurrency(calculo.vendedor_empresa)}</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground text-right">Split {form.split_vendedor_asesor}/{form.split_vendedor_empresa}</div>
+                    <PersonPaymentStatus payment={computePersonPayment(calculo.vendedor_agente_final ?? calculo.vendedor_agente)} tipo={form.tipo_pago_comision} />
                   </div>
 
                   {/* Asistencia block */}
@@ -656,6 +670,7 @@ const SaleForm = () => {
                           <span>{formatCurrency(calculo.asistencia_empresa ?? 0)}</span>
                         </div>
                         <div className="text-[10px] text-muted-foreground text-right">Split {form.split_asistencia_asesor}/{form.split_asistencia_empresa}</div>
+                        <PersonPaymentStatus payment={computePersonPayment(calculo.asistencia_agente ?? 0)} tipo={form.tipo_pago_comision} />
                       </div>
                     );
                   })()}
@@ -690,6 +705,7 @@ const SaleForm = () => {
                       <span>{formatCurrency(calculo.captador_empresa)}</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground text-right">Split {form.split_captador_asesor}/{form.split_captador_empresa}</div>
+                    <PersonPaymentStatus payment={computePersonPayment(calculo.captador_agente)} tipo={form.tipo_pago_comision} />
                   </div>
                 </div>
               );
@@ -755,6 +771,27 @@ function CalcRow({ label, value, highlight = false, sub = false }: { label: stri
     <div className={`flex justify-between items-center ${sub ? 'pl-3 text-sm' : ''}`}>
       <span className={`${highlight ? 'font-semibold' : 'text-muted-foreground'} ${sub ? 'text-xs' : 'text-sm'}`}>{label}</span>
       <span className={`${highlight ? 'font-semibold text-primary' : ''} text-sm`}>{formatCurrency(value)}</span>
+    </div>
+  );
+}
+
+function PersonPaymentStatus({ payment, tipo }: { payment: { pagado: number; pendiente: number; estado: 'pagada' | 'parcial' | 'pendiente' }; tipo: 'unico' | 'parcial' }) {
+  const label = payment.estado === 'pagada' ? 'Pagado' : payment.estado === 'parcial' ? 'Parcial' : 'Pendiente';
+  const color = payment.estado === 'pagada' ? 'text-primary' : payment.estado === 'parcial' ? 'text-amber-600' : 'text-muted-foreground';
+  return (
+    <div className="mt-2 pt-2 border-t border-border/60 space-y-1">
+      <div className="flex justify-between text-[11px]">
+        <span className="text-muted-foreground">Pagado</span>
+        <span className="font-medium">{formatCurrency(payment.pagado)}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-muted-foreground">Pendiente</span>
+        <span className="font-medium">{formatCurrency(Math.max(0, payment.pendiente))}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-muted-foreground">Estado {tipo === 'parcial' ? '(50/50)' : ''}</span>
+        <span className={`font-semibold ${color}`}>{label}</span>
+      </div>
     </div>
   );
 }
