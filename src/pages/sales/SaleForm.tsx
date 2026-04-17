@@ -318,7 +318,23 @@ const SaleForm = () => {
               <Field label="Unidad" value={form.unidad} onChange={v => set('unidad', v)} />
               <div className="space-y-2">
                 <Label className="text-xs">Tipo de Inmueble</Label>
-                <Select value={form.tipo_inmueble} onValueChange={v => set('tipo_inmueble', v)}>
+                <Select value={form.tipo_inmueble} onValueChange={v => {
+                  set('tipo_inmueble', v);
+                  if (!needsHabMetraje(v) && !(v === 'Solar' || v === 'Local')) {
+                    set('metraje', 0);
+                  }
+                  if (!needsPrecioM2(v)) {
+                    set('precio_por_m2', 0);
+                  }
+                  if (!needsHabMetraje(v)) {
+                    set('habitaciones', 0);
+                    if (v === 'Solar' || v === 'Local') {
+                      // keep metraje for Solar/Local
+                    } else {
+                      set('metraje', 0);
+                    }
+                  }
+                }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{TIPOS_INMUEBLE.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
