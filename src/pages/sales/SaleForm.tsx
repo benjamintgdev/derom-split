@@ -485,21 +485,15 @@ const SaleForm = () => {
           {/* Información de Pago de Comisión */}
           <div className="kpi-card space-y-4">
             <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Información de Pago de Comisión</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">Tipo de Pago</Label>
-                <Select value={form.tipo_pago_comision} onValueChange={v => set('tipo_pago_comision', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unico">Pago único</SelectItem>
-                    <SelectItem value="parcial">Pago en 2 partes (50/50)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Monto Total Comisión</Label>
-                <Input value={formatCurrency(montoTotalComision)} readOnly className="bg-muted/50 font-semibold" />
-              </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Tipo de Pago</Label>
+              <Select value={form.tipo_pago_comision} onValueChange={v => set('tipo_pago_comision', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unico">Pago único</SelectItem>
+                  <SelectItem value="parcial">Pago en 2 partes (50/50)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {form.tipo_pago_comision === 'unico' ? (
