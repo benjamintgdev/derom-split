@@ -20,9 +20,9 @@ const SaleDetail = () => {
   const asistente = venta.asistencia_agente_id ? getAgenteById(venta.asistencia_agente_id) : null;
   const pagos = id ? getPagosByVenta(id) : [];
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('¿Está seguro de eliminar esta venta?')) {
-      deleteVenta(venta.id);
+      await deleteVenta(venta.id);
       navigate('/ventas');
     }
   };
