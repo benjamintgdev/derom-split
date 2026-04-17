@@ -301,7 +301,7 @@ const SaleForm = () => {
               <Field label="Teléfono" value={form.telefono} onChange={v => set('telefono', v)} />
               <Field label="Email" value={form.email} onChange={v => set('email', v)} type="email" />
               <div className="space-y-2">
-                <Label className="text-xs">Tipo de Ingreso</Label>
+                <Label className="text-xs">Tipo de Venta</Label>
                 <Select value={form.tipo_ingreso} onValueChange={v => set('tipo_ingreso', v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{TIPOS_INGRESO.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
