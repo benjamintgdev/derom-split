@@ -775,4 +775,25 @@ function CalcRow({ label, value, highlight = false, sub = false }: { label: stri
   );
 }
 
+function PersonPaymentStatus({ payment, tipo }: { payment: { pagado: number; pendiente: number; estado: 'pagada' | 'parcial' | 'pendiente' }; tipo: 'unico' | 'parcial' }) {
+  const label = payment.estado === 'pagada' ? 'Pagado' : payment.estado === 'parcial' ? 'Parcial' : 'Pendiente';
+  const color = payment.estado === 'pagada' ? 'text-primary' : payment.estado === 'parcial' ? 'text-amber-600' : 'text-muted-foreground';
+  return (
+    <div className="mt-2 pt-2 border-t border-border/60 space-y-1">
+      <div className="flex justify-between text-[11px]">
+        <span className="text-muted-foreground">Pagado</span>
+        <span className="font-medium">{formatCurrency(payment.pagado)}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-muted-foreground">Pendiente</span>
+        <span className="font-medium">{formatCurrency(Math.max(0, payment.pendiente))}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-muted-foreground">Estado {tipo === 'parcial' ? '(50/50)' : ''}</span>
+        <span className={`font-semibold ${color}`}>{label}</span>
+      </div>
+    </div>
+  );
+}
+
 export default SaleForm;
