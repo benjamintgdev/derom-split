@@ -212,7 +212,7 @@ const SaleForm = () => {
       monto_empresa_total: calculo.empresa_total,
       creado_por: user?.id ?? '',
       habitaciones: needsHabMetraje(form.tipo_inmueble) ? form.habitaciones : undefined,
-      metraje: needsHabMetraje(form.tipo_inmueble) ? form.metraje : undefined,
+      metraje: (needsHabMetraje(form.tipo_inmueble) || needsPrecioM2(form.tipo_inmueble)) ? form.metraje : undefined,
       precio_por_m2: needsPrecioM2(form.tipo_inmueble) ? form.precio_por_m2 : undefined,
       asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : null,
       porcentaje_asistencia: tieneAsistencia ? form.porcentaje_asistencia : 0,
