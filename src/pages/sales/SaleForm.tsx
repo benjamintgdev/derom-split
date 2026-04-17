@@ -359,7 +359,7 @@ const SaleForm = () => {
               {needsPrecioM2(form.tipo_inmueble) && (
                 <>
                   <NumField label="Precio por m² (USD)" value={form.precio_por_m2} onChange={v => set('precio_por_m2', Math.max(0, v))} step={0.01} />
-                  <NumField label="Metraje (m²)" value={form.metraje} onChange={v => set('metraje', Math.max(0, v))} step={0.01} min={0} />
+                  <NumField label="Metraje (m²)" value={form.metraje} onChange={v => set('metraje', Math.max(0, v))} step={0.01} />
                 </>
               )}
             </div>
