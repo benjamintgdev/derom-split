@@ -212,7 +212,7 @@ const SaleForm = () => {
       monto_empresa_total: calculo.empresa_total,
       creado_por: user?.id ?? '',
       habitaciones: needsHabMetraje(form.tipo_inmueble) ? form.habitaciones : undefined,
-      metraje: needsHabMetraje(form.tipo_inmueble) ? form.metraje : undefined,
+      metraje: (needsHabMetraje(form.tipo_inmueble) || needsPrecioM2(form.tipo_inmueble)) ? form.metraje : undefined,
       precio_por_m2: needsPrecioM2(form.tipo_inmueble) ? form.precio_por_m2 : undefined,
       asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : null,
       porcentaje_asistencia: tieneAsistencia ? form.porcentaje_asistencia : 0,
@@ -318,7 +318,23 @@ const SaleForm = () => {
               <Field label="Unidad" value={form.unidad} onChange={v => set('unidad', v)} />
               <div className="space-y-2">
                 <Label className="text-xs">Tipo de Inmueble</Label>
-                <Select value={form.tipo_inmueble} onValueChange={v => set('tipo_inmueble', v)}>
+                <Select value={form.tipo_inmueble} onValueChange={v => {
+                  set('tipo_inmueble', v);
+                  if (!needsHabMetraje(v) && !(v === 'Solar' || v === 'Local')) {
+                    set('metraje', 0);
+                  }
+                  if (!needsPrecioM2(v)) {
+                    set('precio_por_m2', 0);
+                  }
+                  if (!needsHabMetraje(v)) {
+                    set('habitaciones', 0);
+                    if (v === 'Solar' || v === 'Local') {
+                      // keep metraje for Solar/Local
+                    } else {
+                      set('metraje', 0);
+                    }
+                  }
+                }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{TIPOS_INMUEBLE.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
@@ -341,7 +357,10 @@ const SaleForm = () => {
                 </>
               )}
               {needsPrecioM2(form.tipo_inmueble) && (
-                <NumField label="Precio por m² (USD)" value={form.precio_por_m2} onChange={v => set('precio_por_m2', Math.max(0, v))} step={0.01} />
+                <>
+                  <NumField label="Precio por m² (USD)" value={form.precio_por_m2} onChange={v => set('precio_por_m2', Math.max(0, v))} step={0.01} />
+                  <NumField label="Metraje (m²)" value={form.metraje} onChange={v => set('metraje', Math.max(0, v))} step={0.01} />
+                </>
               )}
             </div>
           </div>
