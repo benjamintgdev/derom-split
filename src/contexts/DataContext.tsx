@@ -244,7 +244,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addAgente = async (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => {
     const id = `ag_${generateId()}`;
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('agentes')
       .insert({ id_agente: id, nombre: a.nombre, activo: a.activo, porcentaje_asesor: 50, porcentaje_empresa: 50 })
       .select()
@@ -262,7 +262,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const update: Record<string, any> = {};
     if (a.nombre !== undefined) update.nombre = a.nombre;
     if (a.activo !== undefined) update.activo = a.activo;
-    const { error } = await supabase.from('agentes').update(update).eq('id_agente', id);
+    const { error } = await (supabase as any).from('agentes').update(update).eq('id_agente', id);
     if (error) {
       toast.error('Error al actualizar agente');
       throw error;
@@ -291,7 +291,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addVenta = async (v: Omit<Venta, 'id' | 'created_at' | 'updated_at'>) => {
     const row = ventaToRow(v);
-    const { data, error } = await supabase.from('ventas').insert(row).select().single();
+    const { data, error } = await (supabase as any).from('ventas').insert(row).select().single();
     if (error) {
       console.error('Error creating venta:', error);
       toast.error('Error al crear la venta');
@@ -305,7 +305,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateVenta = async (id: string, v: Partial<Venta>) => {
     const row = ventaToRow(v);
-    const { data, error } = await supabase.from('ventas').update(row).eq('id_venta', id).select().single();
+    const { data, error } = await (supabase as any).from('ventas').update(row).eq('id_venta', id).select().single();
     if (error) {
       console.error('Error updating venta:', error);
       toast.error('Error al actualizar la venta');
