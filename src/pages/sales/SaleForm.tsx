@@ -275,13 +275,10 @@ const SaleForm = () => {
 
     try {
       if (isEdit && existing) {
-        updateVenta(existing.id, ventaData);
+        await updateVenta(existing.id, ventaData);
         navigate(`/ventas/${existing.id}`);
       } else {
-        // Save locally
-        const newV = addVenta(ventaData);
-        // Also save to Google Sheets
-        await saveVentaToSheet(sheetPayload);
+        const newV = await addVenta(ventaData);
         navigate(`/ventas/${newV.id}`);
       }
     } catch (err) {
