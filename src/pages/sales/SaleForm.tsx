@@ -640,6 +640,7 @@ const SaleForm = () => {
                       <span>{formatCurrency(calculo.vendedor_empresa)}</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground text-right">Split {form.split_vendedor_asesor}/{form.split_vendedor_empresa}</div>
+                    <PersonPaymentStatus payment={computePersonPayment(calculo.vendedor_agente_final ?? calculo.vendedor_agente)} tipo={form.tipo_pago_comision} />
                   </div>
 
                   {/* Asistencia block */}
@@ -669,6 +670,7 @@ const SaleForm = () => {
                           <span>{formatCurrency(calculo.asistencia_empresa ?? 0)}</span>
                         </div>
                         <div className="text-[10px] text-muted-foreground text-right">Split {form.split_asistencia_asesor}/{form.split_asistencia_empresa}</div>
+                        <PersonPaymentStatus payment={computePersonPayment(calculo.asistencia_agente ?? 0)} tipo={form.tipo_pago_comision} />
                       </div>
                     );
                   })()}
@@ -703,6 +705,7 @@ const SaleForm = () => {
                       <span>{formatCurrency(calculo.captador_empresa)}</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground text-right">Split {form.split_captador_asesor}/{form.split_captador_empresa}</div>
+                    <PersonPaymentStatus payment={computePersonPayment(calculo.captador_agente)} tipo={form.tipo_pago_comision} />
                   </div>
                 </div>
               );
