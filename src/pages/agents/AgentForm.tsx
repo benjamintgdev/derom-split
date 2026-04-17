@@ -25,7 +25,7 @@ const AgentForm = () => {
     return <p className="text-muted-foreground">No tiene permisos para esta acción.</p>;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -33,10 +33,10 @@ const AgentForm = () => {
     if (splitAsesor + splitEmpresa !== 100) { setError('El split debe sumar 100%'); return; }
 
     if (isEdit && existing) {
-      updateAgente(existing.id, { nombre });
+      await updateAgente(existing.id, { nombre });
       navigate(`/agentes/${existing.id}`);
     } else {
-      const newAgent = addAgente({ nombre, activo: true });
+      const newAgent = await addAgente({ nombre, activo: true });
       addHistorial({
         agente_id: newAgent.id,
         porcentaje_asesor: splitAsesor,
