@@ -3,21 +3,11 @@ import { Agente, HistorialComisionAgente, Venta, PagoComision } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Re-export SheetAgente shape for backward-compat with components still reading sheetAgentes
-export interface SheetAgente {
-  id_agente: string;
-  nombre: string;
-  porcentaje_asesor: number;
-  porcentaje_empresa: number;
-  activo?: boolean;
-}
-
 interface DataContextType {
   agentes: Agente[];
   historialComisiones: HistorialComisionAgente[];
   ventas: Venta[];
   pagosComision: PagoComision[];
-  sheetAgentes: SheetAgente[];
   loadingAgentes: boolean;
   loadingVentas: boolean;
   addAgente: (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => Promise<Agente>;
@@ -31,7 +21,6 @@ interface DataContextType {
   getVentaById: (id: string) => Venta | undefined;
   addPagoComision: (p: Omit<PagoComision, 'id' | 'created_at'>) => Promise<PagoComision>;
   getPagosByVenta: (ventaId: string) => PagoComision[];
-  saveVentaToSheet: (payload: Record<string, any>) => Promise<void>; // legacy no-op, refresh
   refreshVentas: () => Promise<void>;
   refreshAgentes: () => Promise<void>;
 }
@@ -48,6 +37,9 @@ function mapAgente(row: any): Agente {
     id: row.id_agente,
     nombre: row.nombre,
     activo: row.activo !== false,
+    porcentaje_asesor: Number(row.porcentaje_asesor) || 50,
+    porcentaje_empresa: Number(row.porcentaje_empresa) || 50,
+    fecha_inicio: row.fecha_inicio ?? new Date().toISOString().split('T')[0],
     created_at: row.created_at ?? new Date().toISOString(),
     updated_at: row.updated_at ?? new Date().toISOString(),
   };
@@ -171,7 +163,6 @@ function ventaToRow(v: Partial<Venta>): Record<string, any> {
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [agentes, setAgentes] = useState<Agente[]>([]);
-  const [sheetAgentes, setSheetAgentes] = useState<SheetAgente[]>([]);
   const [historialComisiones, setHistorial] = useState<HistorialComisionAgente[]>([]);
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [pagosComision, setPagosComision] = useState<PagoComision[]>([]);
@@ -185,13 +176,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       const rows = data ?? [];
       setAgentes(rows.map(mapAgente));
-      setSheetAgentes(rows.map((r: any) => ({
-        id_agente: r.id_agente,
-        nombre: r.nombre,
-        porcentaje_asesor: Number(r.porcentaje_asesor) || 50,
-        porcentaje_empresa: Number(r.porcentaje_empresa) || 50,
-        activo: r.activo !== false,
-      })));
       // Build pseudo-historial from current agente splits (compatibility)
       setHistorial(rows.map((r: any) => ({
         id: `db_hc_${r.id_agente}`,
@@ -206,7 +190,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })));
     } catch (err: any) {
       console.error('Error loading agentes from Supabase:', err);
-      toast.error('No se pudieron cargar los agentes.');
+      toast.error(err?.message || 'No se pudieron cargar los agentes.');
     } finally {
       setLoadingAgentes(false);
     }
@@ -231,7 +215,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })));
     } catch (err: any) {
       console.error('Error loading ventas from Supabase:', err);
-      toast.error('No se pudieron cargar las ventas.');
+      toast.error(err?.message || 'No se pudieron cargar las ventas.');
     } finally {
       setLoadingVentas(false);
     }
@@ -246,11 +230,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const id = `ag_${generateId()}`;
     const { data, error } = await (supabase as any)
       .from('agentes')
-      .insert({ id_agente: id, nombre: a.nombre, activo: a.activo, porcentaje_asesor: 50, porcentaje_empresa: 50 })
+      .insert({
+        id_agente: id,
+        nombre: a.nombre,
+        activo: a.activo,
+        porcentaje_asesor: a.porcentaje_asesor,
+        porcentaje_empresa: a.porcentaje_empresa,
+        fecha_inicio: a.fecha_inicio,
+      })
       .select()
       .single();
     if (error) {
-      toast.error('Error al crear agente');
+      toast.error(error.message || 'Error al crear agente');
       throw error;
     }
     const newA = mapAgente(data);
@@ -262,9 +253,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const update: Record<string, any> = {};
     if (a.nombre !== undefined) update.nombre = a.nombre;
     if (a.activo !== undefined) update.activo = a.activo;
+    if (a.porcentaje_asesor !== undefined) update.porcentaje_asesor = a.porcentaje_asesor;
+    if (a.porcentaje_empresa !== undefined) update.porcentaje_empresa = a.porcentaje_empresa;
+    if (a.fecha_inicio !== undefined) update.fecha_inicio = a.fecha_inicio;
     const { error } = await (supabase as any).from('agentes').update(update).eq('id_agente', id);
     if (error) {
-      toast.error('Error al actualizar agente');
+      toast.error(error.message || 'Error al actualizar agente');
       throw error;
     }
     await refreshAgentes();
@@ -294,11 +288,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const { data, error } = await (supabase as any).from('ventas').insert(row).select().single();
     if (error) {
       console.error('Error creating venta:', error);
-      toast.error('Error al crear la venta');
+      toast.error(error.message || 'Error al crear la venta');
       throw error;
     }
     const newV = mapVenta(data);
-    setVentas(prev => [newV, ...prev]);
+    await refreshVentas();
     toast.success('Venta creada correctamente');
     return newV;
   };
@@ -308,11 +302,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const { data, error } = await (supabase as any).from('ventas').update(row).eq('id_venta', id).select().single();
     if (error) {
       console.error('Error updating venta:', error);
-      toast.error('Error al actualizar la venta');
+      toast.error(error.message || 'Error al actualizar la venta');
       throw error;
     }
     const updated = mapVenta(data);
-    setVentas(prev => prev.map(vt => vt.id === id ? updated : vt));
+    await refreshVentas();
     toast.success('Venta actualizada');
   };
 
@@ -320,10 +314,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.from('ventas').delete().eq('id_venta', id);
     if (error) {
       console.error('Error deleting venta:', error);
-      toast.error('Error al eliminar la venta');
+      toast.error(error.message || 'Error al eliminar la venta');
       throw error;
     }
-    setVentas(prev => prev.filter(v => v.id !== id));
+    await refreshVentas();
     toast.success('Venta eliminada');
   };
 
@@ -361,18 +355,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const getPagosByVenta = (ventaId: string) =>
     pagosComision.filter(p => p.venta_id === ventaId).sort((a, b) => new Date(b.fecha_pago).getTime() - new Date(a.fecha_pago).getTime());
 
-  // Legacy compatibility — no-op since Supabase is now the source of truth.
-  const saveVentaToSheet = useCallback(async (_payload: Record<string, any>) => {
-    await refreshVentas();
-  }, [refreshVentas]);
-
   return (
     <DataContext.Provider value={{
       agentes, historialComisiones, ventas, pagosComision,
-      sheetAgentes, loadingAgentes, loadingVentas,
+      loadingAgentes, loadingVentas,
       addAgente, updateAgente, addHistorial, getHistorialByAgente,
       addVenta, updateVenta, deleteVenta, getAgenteById, getVentaById,
-      addPagoComision, getPagosByVenta, saveVentaToSheet, refreshVentas, refreshAgentes,
+      addPagoComision, getPagosByVenta, refreshVentas, refreshAgentes,
     }}>
       {children}
     </DataContext.Provider>
