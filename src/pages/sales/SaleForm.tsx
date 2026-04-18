@@ -21,7 +21,7 @@ function needsPrecioM2(tipo: string) {
 const SaleForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { agentes, historialComisiones, addVenta, updateVenta, getVentaById, sheetAgentes, loadingAgentes, saveVentaToSheet } = useData();
+  const { agentes, historialComisiones, addVenta, updateVenta, getVentaById, loadingAgentes } = useData();
   const { isCeo, user } = useAuth();
   const isEdit = !!id;
   const existing = id ? getVentaById(id) : null;
@@ -29,10 +29,9 @@ const SaleForm = () => {
 
   const activeAgentes = agentes.filter(a => a.activo);
 
-  // Helper: get split from sheetAgentes (primary) or fall back to historial
-  const getSheetSplit = (agenteId: string) => {
-    const sa = sheetAgentes.find(a => a.id_agente === agenteId);
-    if (sa) return { porcentaje_asesor: sa.porcentaje_asesor, porcentaje_empresa: sa.porcentaje_empresa };
+  const getAgentSplit = (agenteId: string) => {
+    const agente = agentes.find(a => a.id === agenteId);
+    if (agente) return { porcentaje_asesor: agente.porcentaje_asesor, porcentaje_empresa: agente.porcentaje_empresa };
     return null;
   };
 
@@ -80,12 +79,12 @@ const SaleForm = () => {
 
   const [error, setError] = useState('');
 
-  // Auto-load split when vendedor changes (prefer sheetAgentes)
+  // Auto-load split when vendedor changes
   useEffect(() => {
     if (form.vendedor_id && !form.override_split_vendedor) {
-      const sheetSplit = getSheetSplit(form.vendedor_id);
-      if (sheetSplit) {
-        setForm(f => ({ ...f, split_vendedor_asesor: sheetSplit.porcentaje_asesor, split_vendedor_empresa: sheetSplit.porcentaje_empresa }));
+      const agentSplit = getAgentSplit(form.vendedor_id);
+      if (agentSplit) {
+        setForm(f => ({ ...f, split_vendedor_asesor: agentSplit.porcentaje_asesor, split_vendedor_empresa: agentSplit.porcentaje_empresa }));
       } else {
         const hist = historialComisiones.filter(h => h.agente_id === form.vendedor_id);
         const split = getSplitVigenteByDate(hist, form.fecha_reserva);
@@ -94,14 +93,14 @@ const SaleForm = () => {
         }
       }
     }
-  }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor, sheetAgentes]);
+  }, [form.vendedor_id, form.fecha_reserva, form.override_split_vendedor, agentes, historialComisiones]);
 
-  // Auto-load split when captador changes (prefer sheetAgentes)
+  // Auto-load split when captador changes
   useEffect(() => {
     if (form.captador_id && !form.override_split_captador) {
-      const sheetSplit = getSheetSplit(form.captador_id);
-      if (sheetSplit) {
-        setForm(f => ({ ...f, split_captador_asesor: sheetSplit.porcentaje_asesor, split_captador_empresa: sheetSplit.porcentaje_empresa }));
+      const agentSplit = getAgentSplit(form.captador_id);
+      if (agentSplit) {
+        setForm(f => ({ ...f, split_captador_asesor: agentSplit.porcentaje_asesor, split_captador_empresa: agentSplit.porcentaje_empresa }));
       } else {
         const hist = historialComisiones.filter(h => h.agente_id === form.captador_id);
         const split = getSplitVigenteByDate(hist, form.fecha_reserva);
@@ -110,14 +109,14 @@ const SaleForm = () => {
         }
       }
     }
-  }, [form.captador_id, form.fecha_reserva, form.override_split_captador, sheetAgentes]);
+  }, [form.captador_id, form.fecha_reserva, form.override_split_captador, agentes, historialComisiones]);
 
-  // Auto-load split for asistencia agent (prefer sheetAgentes)
+  // Auto-load split for asistencia agent
   useEffect(() => {
     if (form.asistencia_agente_id) {
-      const sheetSplit = getSheetSplit(form.asistencia_agente_id);
-      if (sheetSplit) {
-        setForm(f => ({ ...f, split_asistencia_asesor: sheetSplit.porcentaje_asesor, split_asistencia_empresa: sheetSplit.porcentaje_empresa }));
+      const agentSplit = getAgentSplit(form.asistencia_agente_id);
+      if (agentSplit) {
+        setForm(f => ({ ...f, split_asistencia_asesor: agentSplit.porcentaje_asesor, split_asistencia_empresa: agentSplit.porcentaje_empresa }));
       } else {
         const hist = historialComisiones.filter(h => h.agente_id === form.asistencia_agente_id);
         const split = getSplitVigenteByDate(hist, form.fecha_reserva);
@@ -126,7 +125,7 @@ const SaleForm = () => {
         }
       }
     }
-  }, [form.asistencia_agente_id, form.fecha_reserva, sheetAgentes]);
+  }, [form.asistencia_agente_id, form.fecha_reserva, agentes, historialComisiones]);
 
   const tieneAsistencia = !!form.asistencia_agente_id;
 
@@ -242,37 +241,6 @@ const SaleForm = () => {
       notas_pago_comision: form.notas_pago_comision,
     };
 
-    // Build Google Sheets payload
-    const sheetPayload = {
-      fecha_reserva: form.fecha_reserva,
-      fecha_cierre: form.fecha_cierre || '',
-      cliente: form.cliente,
-      telefono: form.telefono,
-      email: form.email,
-      proyecto: form.proyecto,
-      unidad: form.unidad,
-      tipo_inmueble: form.tipo_inmueble,
-      habitaciones: String(form.habitaciones || ''),
-      metraje: String(form.metraje || ''),
-      precio_m2: String(form.precio_por_m2 || ''),
-      m2_total: String(form.metraje || ''),
-      precio_usd: String(form.precio_usd),
-      tasa: String(form.tasa),
-      precio_rd: String(calculo.precio_rd),
-      porcentaje_comision: String(form.porcentaje_comision_venta),
-      comision_bruta: String(calculo.comision_bruta),
-      vendedor_id: form.vendedor_id,
-      captador_id: form.captador_id || '',
-      porcentaje_captador: String(form.porcentaje_captador),
-      referido_porcentaje: String(form.porcentaje_referido),
-      asistencia_agente_id: tieneAsistencia ? form.asistencia_agente_id : '',
-      porcentaje_asistencia: String(tieneAsistencia ? form.porcentaje_asistencia : ''),
-      tipo_pago_comision: form.tipo_pago_comision,
-      fecha_pago_1: form.tipo_pago_comision === 'unico' ? (form.fecha_pago_unico || '') : (form.fecha_pago_1 || ''),
-      fecha_pago_2: form.tipo_pago_comision === 'parcial' ? (form.fecha_pago_2 || '') : '',
-      estado_venta: form.estado,
-    };
-
     try {
       if (isEdit && existing) {
         await updateVenta(existing.id, ventaData);
@@ -292,7 +260,7 @@ const SaleForm = () => {
     return (
       <div className="animate-fade-in flex items-center justify-center py-20">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mr-3" />
-        <span className="text-muted-foreground">Cargando agentes desde Google Sheets...</span>
+        <span className="text-muted-foreground">Cargando agentes...</span>
       </div>
     );
   }

@@ -29,7 +29,7 @@ const SalesList = () => {
       {loadingVentas ? (
         <div className="kpi-card flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-2" />
-          <span className="text-muted-foreground text-sm">Cargando ventas desde Google Sheets...</span>
+          <span className="text-muted-foreground text-sm">Cargando ventas...</span>
         </div>
       ) : (
         <div className="kpi-card overflow-x-auto">
