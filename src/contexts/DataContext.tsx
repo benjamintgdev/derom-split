@@ -284,17 +284,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     historialComisiones.filter(h => h.agente_id === agenteId);
 
   const addVenta = async (v: Omit<Venta, 'id' | 'created_at' | 'updated_at'>) => {
-    const row = ventaToRow(v);
-    const { data, error } = await (supabase as any).from('ventas').insert(row).select().single();
+    const ventaPayload = ventaToRow(v);
+    console.log('INSERTING VENTA', ventaPayload);
+    const response = await (supabase as any).from('ventas').insert(ventaPayload).select().single();
+    console.log('INSERT RESPONSE', response);
+    const { data, error } = response;
     if (error) {
-      console.error('Error creating venta:', error);
+      console.error('INSERT ERROR', error);
       toast.error(error.message || 'Error al crear la venta');
       throw error;
     }
-    const newV = mapVenta(data);
+    // Reload entire ventas state from Supabase — do NOT manually mutate UI state
     await refreshVentas();
     toast.success('Venta creada correctamente');
-    return newV;
+    return mapVenta(data);
   };
 
   const updateVenta = async (id: string, v: Partial<Venta>) => {
