@@ -36,7 +36,13 @@ const AgentForm = () => {
       await updateAgente(existing.id, { nombre });
       navigate(`/agentes/${existing.id}`);
     } else {
-      const newAgent = await addAgente({ nombre, activo: true });
+      const newAgent = await addAgente({
+        nombre,
+        activo: true,
+        porcentaje_asesor: splitAsesor,
+        porcentaje_empresa: splitEmpresa,
+        fecha_inicio: vigenciaDesde,
+      });
       addHistorial({
         agente_id: newAgent.id,
         porcentaje_asesor: splitAsesor,
