@@ -284,7 +284,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     historialComisiones.filter(h => h.agente_id === agenteId);
 
   const addVenta = async (v: Omit<Venta, 'id' | 'created_at' | 'updated_at'>) => {
-    const ventaPayload = ventaToRow(v);
+    const ventaPayload = { ...ventaToRow(v), id_venta: crypto.randomUUID() };
     console.log('INSERTING VENTA', ventaPayload);
     const response = await (supabase as any).from('ventas').insert(ventaPayload).select().single();
     console.log('INSERT RESPONSE', response);
