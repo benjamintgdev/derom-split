@@ -11,6 +11,9 @@ export interface Agente {
   id: string;
   nombre: string;
   activo: boolean;
+  porcentaje_asesor: number;
+  porcentaje_empresa: number;
+  fecha_inicio: string;
   created_at: string;
   updated_at: string;
 }
