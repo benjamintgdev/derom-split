@@ -103,10 +103,9 @@ function mapVenta(row: any): Venta {
   };
 }
 
-// Map app Venta payload -> DB row (for insert/update)
+// Map app Venta payload -> DB row (only real columns from public.ventas)
 function ventaToRow(v: Partial<Venta>): Record<string, any> {
   const row: Record<string, any> = {};
-  if (v.tipo_ingreso !== undefined) row.tipo_ingreso = v.tipo_ingreso;
   if (v.fecha_reserva !== undefined) row.fecha_reserva = v.fecha_reserva || null;
   if (v.fecha_cierre !== undefined) row.fecha_cierre = v.fecha_cierre || null;
   if (v.cliente !== undefined) row.cliente = v.cliente;
@@ -136,28 +135,7 @@ function ventaToRow(v: Partial<Venta>): Record<string, any> {
   if (v.fecha_primer_pago_comision !== undefined) row.fecha_pago_1 = v.fecha_primer_pago_comision || null;
   if (v.fecha_proximo_pago_comision !== undefined) row.fecha_pago_2 = v.fecha_proximo_pago_comision || null;
   if (v.estado !== undefined) row.estado_venta = v.estado;
-  if (v.notas !== undefined) row.notas = v.notas;
-  if (v.split_vendedor_asesor_aplicado !== undefined) row.split_vendedor_asesor_aplicado = v.split_vendedor_asesor_aplicado;
-  if (v.split_vendedor_empresa_aplicado !== undefined) row.split_vendedor_empresa_aplicado = v.split_vendedor_empresa_aplicado;
-  if (v.split_captador_asesor_aplicado !== undefined) row.split_captador_asesor_aplicado = v.split_captador_asesor_aplicado;
-  if (v.split_captador_empresa_aplicado !== undefined) row.split_captador_empresa_aplicado = v.split_captador_empresa_aplicado;
-  if (v.override_split_vendedor !== undefined) row.override_split_vendedor = v.override_split_vendedor;
-  if (v.override_split_captador !== undefined) row.override_split_captador = v.override_split_captador;
-  if (v.monto_vendedor_agente !== undefined) row.monto_vendedor_agente = v.monto_vendedor_agente;
-  if (v.monto_vendedor_empresa !== undefined) row.monto_vendedor_empresa = v.monto_vendedor_empresa;
-  if (v.monto_captador_agente !== undefined) row.monto_captador_agente = v.monto_captador_agente;
-  if (v.monto_captador_empresa !== undefined) row.monto_captador_empresa = v.monto_captador_empresa;
-  if (v.monto_referido !== undefined) row.monto_referido = v.monto_referido;
-  if (v.monto_empresa_total !== undefined) row.monto_empresa_total = v.monto_empresa_total;
-  if (v.monto_asistencia_agente !== undefined) row.monto_asistencia_agente = v.monto_asistencia_agente;
-  if (v.monto_asistencia_empresa !== undefined) row.monto_asistencia_empresa = v.monto_asistencia_empresa;
-  if (v.monto_total_comision_a_pagar !== undefined) row.monto_total_comision_a_pagar = v.monto_total_comision_a_pagar;
-  if (v.monto_pagado_comision !== undefined) row.monto_pagado_comision = v.monto_pagado_comision;
-  if (v.porcentaje_pagado_comision !== undefined) row.porcentaje_pagado_comision = v.porcentaje_pagado_comision;
   if (v.balance_pendiente_comision !== undefined) row.balance_pendiente_comision = v.balance_pendiente_comision;
-  if (v.estado_pago_comision !== undefined) row.estado_pago_comision = v.estado_pago_comision;
-  if (v.notas_pago_comision !== undefined) row.notas_pago_comision = v.notas_pago_comision;
-  if (v.creado_por !== undefined) row.creado_por = v.creado_por;
   return row;
 }
 
