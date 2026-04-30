@@ -51,6 +51,7 @@ const SaleForm = () => {
     captador_id: existing?.captador_id ?? '',
     porcentaje_captador: existing?.porcentaje_captador ?? 0,
     porcentaje_referido: existing?.porcentaje_referido ?? 0,
+    referido_nombre: existing?.referido_nombre ?? '',
     fecha_cierre: existing?.fecha_cierre ?? '',
     estado: (existing?.estado ?? 'reserva') as EstadoVenta,
     notas: existing?.notas ?? '',
@@ -207,6 +208,7 @@ const SaleForm = () => {
       captador_id: form.captador_id || null,
       porcentaje_captador: form.porcentaje_captador,
       porcentaje_referido: form.porcentaje_referido,
+      referido_nombre: form.referido_nombre,
       fecha_cierre: form.fecha_cierre || null,
       estado: form.estado,
       notas: form.notas,
@@ -386,6 +388,7 @@ const SaleForm = () => {
               </div>
               <NumField label="% Captador" value={form.porcentaje_captador} onChange={v => set('porcentaje_captador', Math.max(0, v))} step={0.1} />
               <NumField label="% Referido" value={form.porcentaje_referido} onChange={v => set('porcentaje_referido', Math.max(0, v))} step={0.1} />
+              <Field label="Nombre del referido" value={form.referido_nombre} onChange={v => set('referido_nombre', v)} />
             </div>
 
             {/* Asistencia */}
