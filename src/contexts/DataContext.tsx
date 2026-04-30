@@ -12,6 +12,7 @@ interface DataContextType {
   loadingVentas: boolean;
   addAgente: (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => Promise<Agente>;
   updateAgente: (id: string, a: Partial<Agente>) => Promise<void>;
+  deleteAgente: (id: string) => Promise<void>;
   addHistorial: (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => void;
   getHistorialByAgente: (agenteId: string) => HistorialComisionAgente[];
   addVenta: (v: Omit<Venta, 'id' | 'created_at' | 'updated_at'>) => Promise<Venta>;
@@ -244,6 +245,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await refreshAgentes();
   };
 
+  const deleteAgente = async (id: string) => {
+    const { error } = await (supabase as any).from('agentes').delete().eq('id_agente', id);
+    if (error) {
+      toast.error(error.message || 'Error al eliminar agente');
+      throw error;
+    }
+    await refreshAgentes();
+    toast.success('Agente eliminado');
+  };
+
   const addHistorial = (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => {
     // Update agente split fields to reflect new historial entry (no separate historial table)
     supabase
@@ -342,7 +353,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       agentes, historialComisiones, ventas, pagosComision,
       loadingAgentes, loadingVentas,
-      addAgente, updateAgente, addHistorial, getHistorialByAgente,
+      addAgente, updateAgente, deleteAgente, addHistorial, getHistorialByAgente,
       addVenta, updateVenta, deleteVenta, getAgenteById, getVentaById,
       addPagoComision, getPagosByVenta, refreshVentas, refreshAgentes,
     }}>

@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 import { getSplitVigenteByDate } from '@/utils/calculations';
 
 const AgentsList = () => {
-  const { agentes, historialComisiones, updateAgente } = useData();
+  const { agentes, historialComisiones, updateAgente, deleteAgente } = useData();
   const { isCeo } = useAuth();
   const today = new Date().toISOString().split('T')[0];
 
@@ -67,6 +67,18 @@ const AgentsList = () => {
                             onClick={() => updateAgente(ag.id, { activo: !ag.activo })}
                           >
                             {ag.activo ? 'Desactivar' : 'Activar'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              if (window.confirm(`¿Eliminar al agente "${ag.nombre}"? Esta acción no se puede deshacer.`)) {
+                                deleteAgente(ag.id);
+                              }
+                            }}
+                          >
+                            Eliminar
                           </Button>
                         </>
                       )}
