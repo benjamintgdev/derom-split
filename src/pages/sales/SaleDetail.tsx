@@ -103,6 +103,7 @@ const SaleDetail = () => {
                 </>
               )}
               {venta.porcentaje_referido > 0 && <Detail label="% Referido" value={`${venta.porcentaje_referido}%`} />}
+              {venta.referido_nombre && <Detail label="Nombre del referido" value={venta.referido_nombre} />}
               {venta.override_split_vendedor && <Detail label="" value="⚠️ Override split vendedor" />}
               {venta.override_split_captador && <Detail label="" value="⚠️ Override split captador" />}
             </div>

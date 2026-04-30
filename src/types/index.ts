@@ -74,6 +74,7 @@ export interface Venta {
   captador_id: string | null;
   porcentaje_captador: number;
   porcentaje_referido: number;
+  referido_nombre?: string;
   fecha_cierre: string | null;
   estado: EstadoVenta;
   notas: string;

@@ -66,6 +66,7 @@ function mapVenta(row: any): Venta {
     captador_id: row.captador_id ?? null,
     porcentaje_captador: Number(row.porcentaje_captador) || 0,
     porcentaje_referido: Number(row.referido_porcentaje) || 0,
+    referido_nombre: row.referido_nombre ?? '',
     fecha_cierre: row.fecha_cierre ?? null,
     estado: (row.estado_venta === 'cerrada' ? 'cerrada' : 'reserva') as any,
     notas: '',
@@ -129,6 +130,7 @@ function ventaToRow(v: Partial<Venta>): Record<string, any> {
   if (v.captador_id !== undefined) row.captador_id = v.captador_id || null;
   if (v.porcentaje_captador !== undefined) row.porcentaje_captador = v.porcentaje_captador;
   if (v.porcentaje_referido !== undefined) row.referido_porcentaje = v.porcentaje_referido;
+  if (v.referido_nombre !== undefined) row.referido_nombre = v.referido_nombre || null;
   if (v.asistencia_agente_id !== undefined) row.asistencia_agente_id = v.asistencia_agente_id || null;
   if (v.porcentaje_asistencia !== undefined) row.porcentaje_asistencia = v.porcentaje_asistencia;
   if (v.tipo_pago_comision !== undefined) row.tipo_pago_comision = v.tipo_pago_comision;
