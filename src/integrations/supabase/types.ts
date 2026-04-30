@@ -127,6 +127,7 @@ export type Database = {
           precio_rd: number
           precio_usd: number
           proyecto: string | null
+          referido_nombre: string | null
           referido_porcentaje: number | null
           split_captador_asesor_aplicado: number | null
           split_captador_empresa_aplicado: number | null
@@ -182,6 +183,7 @@ export type Database = {
           precio_rd?: number
           precio_usd?: number
           proyecto?: string | null
+          referido_nombre?: string | null
           referido_porcentaje?: number | null
           split_captador_asesor_aplicado?: number | null
           split_captador_empresa_aplicado?: number | null
@@ -237,6 +239,7 @@ export type Database = {
           precio_rd?: number
           precio_usd?: number
           proyecto?: string | null
+          referido_nombre?: string | null
           referido_porcentaje?: number | null
           split_captador_asesor_aplicado?: number | null
           split_captador_empresa_aplicado?: number | null
