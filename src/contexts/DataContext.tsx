@@ -12,6 +12,7 @@ interface DataContextType {
   loadingVentas: boolean;
   addAgente: (a: Omit<Agente, 'id' | 'created_at' | 'updated_at'>) => Promise<Agente>;
   updateAgente: (id: string, a: Partial<Agente>) => Promise<void>;
+  deleteAgente: (id: string) => Promise<void>;
   addHistorial: (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => void;
   getHistorialByAgente: (agenteId: string) => HistorialComisionAgente[];
   addVenta: (v: Omit<Venta, 'id' | 'created_at' | 'updated_at'>) => Promise<Venta>;
