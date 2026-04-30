@@ -245,6 +245,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await refreshAgentes();
   };
 
+  const deleteAgente = async (id: string) => {
+    const { error } = await (supabase as any).from('agentes').delete().eq('id_agente', id);
+    if (error) {
+      toast.error(error.message || 'Error al eliminar agente');
+      throw error;
+    }
+    await refreshAgentes();
+    toast.success('Agente eliminado');
+  };
+
   const addHistorial = (h: Omit<HistorialComisionAgente, 'id' | 'created_at'>) => {
     // Update agente split fields to reflect new historial entry (no separate historial table)
     supabase
