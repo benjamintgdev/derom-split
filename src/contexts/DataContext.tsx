@@ -353,7 +353,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       agentes, historialComisiones, ventas, pagosComision,
       loadingAgentes, loadingVentas,
-      addAgente, updateAgente, addHistorial, getHistorialByAgente,
+      addAgente, updateAgente, deleteAgente, addHistorial, getHistorialByAgente,
       addVenta, updateVenta, deleteVenta, getAgenteById, getVentaById,
       addPagoComision, getPagosByVenta, refreshVentas, refreshAgentes,
     }}>
