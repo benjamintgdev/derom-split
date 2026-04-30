@@ -68,6 +68,18 @@ const AgentsList = () => {
                           >
                             {ag.activo ? 'Desactivar' : 'Activar'}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              if (window.confirm(`¿Eliminar al agente "${ag.nombre}"? Esta acción no se puede deshacer.`)) {
+                                deleteAgente(ag.id);
+                              }
+                            }}
+                          >
+                            Eliminar
+                          </Button>
                         </>
                       )}
                     </div>
