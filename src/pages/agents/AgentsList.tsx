@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 import { getSplitVigenteByDate } from '@/utils/calculations';
 
 const AgentsList = () => {
-  const { agentes, historialComisiones, updateAgente } = useData();
+  const { agentes, historialComisiones, updateAgente, deleteAgente } = useData();
   const { isCeo } = useAuth();
   const today = new Date().toISOString().split('T')[0];
 
