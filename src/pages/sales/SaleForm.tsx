@@ -349,29 +349,10 @@ const SaleForm = () => {
           <div className="kpi-card space-y-4">
             <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Valores y Comisiones</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <NumField
-                label="Precio USD *"
-                value={form.precio_usd}
-                onChange={v => {
-                  const nv = Math.max(0, v);
-                  setForm(f => ({ ...f, precio_usd: nv }));
-                }}
-              />
-              <NumField
-                label="Tasa"
-                value={form.tasa}
-                onChange={v => {
-                  const nv = Math.max(0, v);
-                  setForm(f => ({ ...f, tasa: nv }));
-                }}
-              />
-              <NumField
-                label="Precio RD$"
-                value={Number((form.precio_usd * form.tasa).toFixed(2))}
-                onChange={v => {
-                  const nv = Math.max(0, v);
-                  setForm(f => ({ ...f, precio_usd: f.tasa > 0 ? Number((nv / f.tasa).toFixed(2)) : 0 }));
-                }}
+              <PriceFields
+                precio_usd={form.precio_usd}
+                tasa={form.tasa}
+                onChange={(precio_usd, tasa) => setForm(f => ({ ...f, precio_usd, tasa }))}
               />
               <NumField label="% Comisión Venta" value={form.porcentaje_comision_venta} onChange={v => set('porcentaje_comision_venta', Math.max(0, v))} step={0.1} />
               <div className="space-y-2">
