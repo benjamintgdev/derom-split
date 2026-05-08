@@ -12,11 +12,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
-const EXPORT_COLUMNS = [
+const DB_COLUMNS = [
   'id_venta','fecha_reserva','fecha_cierre','cliente','telefono','email','proyecto','unidad',
   'tipo_inmueble','habitaciones','metraje','precio_m2','m2_total','precio_usd','tasa','precio_rd',
   'porcentaje_comision','comision_bruta','vendedor_id','captador_id','porcentaje_captador',
   'referido_nombre','referido_porcentaje','asistencia_agente_id','porcentaje_asistencia',
+  'tipo_pago_comision','fecha_pago_1','fecha_pago_2','estado_venta','balance_pendiente_comision','created_at',
+];
+
+const EXPORT_COLUMNS = [
+  'id_venta','fecha_reserva','fecha_cierre','cliente','telefono','email','proyecto','unidad',
+  'tipo_inmueble','habitaciones','metraje','precio_m2','m2_total','precio_usd','tasa','precio_rd',
+  'porcentaje_comision','comision_bruta','vendedor_nombre','captador_nombre','porcentaje_captador',
+  'referido_nombre','referido_porcentaje','asistencia_nombre','porcentaje_asistencia',
   'tipo_pago_comision','fecha_pago_1','fecha_pago_2','estado_venta','balance_pendiente_comision','created_at',
 ];
 
@@ -37,7 +45,7 @@ const SalesList = () => {
     try {
       const { data, error } = await supabase
         .from('ventas')
-        .select(EXPORT_COLUMNS.join(','))
+        .select(DB_COLUMNS.join(','))
         .gte('fecha_reserva', desde)
         .lte('fecha_reserva', hasta)
         .order('fecha_reserva', { ascending: true });
@@ -46,9 +54,21 @@ const SalesList = () => {
         toast.error('No hay ventas en el rango seleccionado');
         return;
       }
+      const { data: agentesData, error: agErr } = await supabase
+        .from('agentes')
+        .select('id_agente,nombre');
+      if (agErr) throw agErr;
+      const nameById = new Map<string, string>();
+      (agentesData || []).forEach((a: any) => nameById.set(a.id_agente, a.nombre));
+      const nameOf = (id: any) => (id ? (nameById.get(id) ?? '') : '');
       const rows = data.map((r: any) => {
         const obj: Record<string, any> = {};
-        EXPORT_COLUMNS.forEach(c => { obj[c] = r[c] ?? ''; });
+        EXPORT_COLUMNS.forEach(c => {
+          if (c === 'vendedor_nombre') obj[c] = nameOf(r.vendedor_id);
+          else if (c === 'captador_nombre') obj[c] = nameOf(r.captador_id);
+          else if (c === 'asistencia_nombre') obj[c] = nameOf(r.asistencia_agente_id);
+          else obj[c] = r[c] ?? '';
+        });
         return obj;
       });
       const ws = XLSX.utils.json_to_sheet(rows, { header: EXPORT_COLUMNS });
