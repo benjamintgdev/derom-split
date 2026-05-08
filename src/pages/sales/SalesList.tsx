@@ -12,11 +12,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
-const EXPORT_COLUMNS = [
+const DB_COLUMNS = [
   'id_venta','fecha_reserva','fecha_cierre','cliente','telefono','email','proyecto','unidad',
   'tipo_inmueble','habitaciones','metraje','precio_m2','m2_total','precio_usd','tasa','precio_rd',
   'porcentaje_comision','comision_bruta','vendedor_id','captador_id','porcentaje_captador',
   'referido_nombre','referido_porcentaje','asistencia_agente_id','porcentaje_asistencia',
+  'tipo_pago_comision','fecha_pago_1','fecha_pago_2','estado_venta','balance_pendiente_comision','created_at',
+];
+
+const EXPORT_COLUMNS = [
+  'id_venta','fecha_reserva','fecha_cierre','cliente','telefono','email','proyecto','unidad',
+  'tipo_inmueble','habitaciones','metraje','precio_m2','m2_total','precio_usd','tasa','precio_rd',
+  'porcentaje_comision','comision_bruta','vendedor_nombre','captador_nombre','porcentaje_captador',
+  'referido_nombre','referido_porcentaje','asistencia_nombre','porcentaje_asistencia',
   'tipo_pago_comision','fecha_pago_1','fecha_pago_2','estado_venta','balance_pendiente_comision','created_at',
 ];
 
