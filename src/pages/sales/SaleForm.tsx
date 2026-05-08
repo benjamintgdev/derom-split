@@ -349,29 +349,10 @@ const SaleForm = () => {
           <div className="kpi-card space-y-4">
             <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Valores y Comisiones</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <NumField
-                label="Precio USD *"
-                value={form.precio_usd}
-                onChange={v => {
-                  const nv = Math.max(0, v);
-                  setForm(f => ({ ...f, precio_usd: nv }));
-                }}
-              />
-              <NumField
-                label="Tasa"
-                value={form.tasa}
-                onChange={v => {
-                  const nv = Math.max(0, v);
-                  setForm(f => ({ ...f, tasa: nv }));
-                }}
-              />
-              <NumField
-                label="Precio RD$"
-                value={Number((form.precio_usd * form.tasa).toFixed(2))}
-                onChange={v => {
-                  const nv = Math.max(0, v);
-                  setForm(f => ({ ...f, precio_usd: f.tasa > 0 ? Number((nv / f.tasa).toFixed(2)) : 0 }));
-                }}
+              <PriceFields
+                precio_usd={form.precio_usd}
+                tasa={form.tasa}
+                onChange={(precio_usd, tasa) => setForm(f => ({ ...f, precio_usd, tasa }))}
               />
               <NumField label="% Comisión Venta" value={form.porcentaje_comision_venta} onChange={v => set('porcentaje_comision_venta', Math.max(0, v))} step={0.1} />
               <div className="space-y-2">
@@ -752,6 +733,91 @@ function CalcRow({ label, value, highlight = false, sub = false }: { label: stri
       <span className={`${highlight ? 'font-semibold' : 'text-muted-foreground'} ${sub ? 'text-xs' : 'text-sm'}`}>{label}</span>
       <span className={`${highlight ? 'font-semibold text-primary' : ''} text-sm`}>{formatCurrency(value)}</span>
     </div>
+  );
+}
+
+function PriceFields({ precio_usd, tasa, onChange }: { precio_usd: number; tasa: number; onChange: (precio_usd: number, tasa: number) => void }) {
+  const fmt = (n: number) => (Number.isFinite(n) && n !== 0 ? String(Number(n.toFixed(2))) : n === 0 ? '0' : '');
+  const [usdStr, setUsdStr] = useState(fmt(precio_usd));
+  const [rdStr, setRdStr] = useState(fmt(precio_usd * tasa));
+  const [tasaStr, setTasaStr] = useState(String(tasa));
+  const [editing, setEditing] = useState<null | 'usd' | 'rd' | 'tasa'>(null);
+  const lastEditedRef = React.useRef<'usd' | 'rd'>('usd');
+
+  // Sync from parent when not actively editing (e.g., loading existing sale)
+  useEffect(() => {
+    if (editing !== 'usd') setUsdStr(fmt(precio_usd));
+    if (editing !== 'rd') setRdStr(fmt(precio_usd * tasa));
+    if (editing !== 'tasa') setTasaStr(String(tasa));
+  }, [precio_usd, tasa, editing]);
+
+  const commit = (which: 'usd' | 'rd' | 'tasa') => {
+    if (which === 'usd') {
+      const usd = Math.max(0, parseFloat(usdStr) || 0);
+      lastEditedRef.current = 'usd';
+      onChange(usd, tasa);
+      setRdStr(fmt(usd * tasa));
+      setUsdStr(fmt(usd));
+    } else if (which === 'rd') {
+      const rd = Math.max(0, parseFloat(rdStr) || 0);
+      const usd = tasa > 0 ? Number((rd / tasa).toFixed(2)) : 0;
+      lastEditedRef.current = 'rd';
+      onChange(usd, tasa);
+      setUsdStr(fmt(usd));
+      setRdStr(fmt(rd));
+    } else {
+      const newTasa = Math.max(0, parseFloat(tasaStr) || 0);
+      if (lastEditedRef.current === 'rd') {
+        const rd = parseFloat(rdStr) || 0;
+        const usd = newTasa > 0 ? Number((rd / newTasa).toFixed(2)) : 0;
+        onChange(usd, newTasa);
+        setUsdStr(fmt(usd));
+      } else {
+        const usd = parseFloat(usdStr) || 0;
+        onChange(usd, newTasa);
+        setRdStr(fmt(usd * newTasa));
+      }
+      setTasaStr(String(newTasa));
+    }
+    setEditing(null);
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label className="text-xs">Precio USD *</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={usdStr}
+          onFocus={() => setEditing('usd')}
+          onChange={e => setUsdStr(e.target.value)}
+          onBlur={() => commit('usd')}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs">Tasa</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={tasaStr}
+          onFocus={() => setEditing('tasa')}
+          onChange={e => setTasaStr(e.target.value)}
+          onBlur={() => commit('tasa')}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs">Precio RD$</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={rdStr}
+          onFocus={() => setEditing('rd')}
+          onChange={e => setRdStr(e.target.value)}
+          onBlur={() => commit('rd')}
+        />
+      </div>
+    </>
   );
 }
 
