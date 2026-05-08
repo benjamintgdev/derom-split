@@ -736,6 +736,91 @@ function CalcRow({ label, value, highlight = false, sub = false }: { label: stri
   );
 }
 
+function PriceFields({ precio_usd, tasa, onChange }: { precio_usd: number; tasa: number; onChange: (precio_usd: number, tasa: number) => void }) {
+  const fmt = (n: number) => (Number.isFinite(n) && n !== 0 ? String(Number(n.toFixed(2))) : n === 0 ? '0' : '');
+  const [usdStr, setUsdStr] = useState(fmt(precio_usd));
+  const [rdStr, setRdStr] = useState(fmt(precio_usd * tasa));
+  const [tasaStr, setTasaStr] = useState(String(tasa));
+  const [editing, setEditing] = useState<null | 'usd' | 'rd' | 'tasa'>(null);
+  const lastEditedRef = React.useRef<'usd' | 'rd'>('usd');
+
+  // Sync from parent when not actively editing (e.g., loading existing sale)
+  useEffect(() => {
+    if (editing !== 'usd') setUsdStr(fmt(precio_usd));
+    if (editing !== 'rd') setRdStr(fmt(precio_usd * tasa));
+    if (editing !== 'tasa') setTasaStr(String(tasa));
+  }, [precio_usd, tasa, editing]);
+
+  const commit = (which: 'usd' | 'rd' | 'tasa') => {
+    if (which === 'usd') {
+      const usd = Math.max(0, parseFloat(usdStr) || 0);
+      lastEditedRef.current = 'usd';
+      onChange(usd, tasa);
+      setRdStr(fmt(usd * tasa));
+      setUsdStr(fmt(usd));
+    } else if (which === 'rd') {
+      const rd = Math.max(0, parseFloat(rdStr) || 0);
+      const usd = tasa > 0 ? Number((rd / tasa).toFixed(2)) : 0;
+      lastEditedRef.current = 'rd';
+      onChange(usd, tasa);
+      setUsdStr(fmt(usd));
+      setRdStr(fmt(rd));
+    } else {
+      const newTasa = Math.max(0, parseFloat(tasaStr) || 0);
+      if (lastEditedRef.current === 'rd') {
+        const rd = parseFloat(rdStr) || 0;
+        const usd = newTasa > 0 ? Number((rd / newTasa).toFixed(2)) : 0;
+        onChange(usd, newTasa);
+        setUsdStr(fmt(usd));
+      } else {
+        const usd = parseFloat(usdStr) || 0;
+        onChange(usd, newTasa);
+        setRdStr(fmt(usd * newTasa));
+      }
+      setTasaStr(String(newTasa));
+    }
+    setEditing(null);
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label className="text-xs">Precio USD *</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={usdStr}
+          onFocus={() => setEditing('usd')}
+          onChange={e => setUsdStr(e.target.value)}
+          onBlur={() => commit('usd')}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs">Tasa</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={tasaStr}
+          onFocus={() => setEditing('tasa')}
+          onChange={e => setTasaStr(e.target.value)}
+          onBlur={() => commit('tasa')}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs">Precio RD$</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={rdStr}
+          onFocus={() => setEditing('rd')}
+          onChange={e => setRdStr(e.target.value)}
+          onBlur={() => commit('rd')}
+        />
+      </div>
+    </>
+  );
+}
+
 function PersonPaymentStatus({ payment, tipo }: { payment: { pagado: number; pendiente: number; estado: 'pagada' | 'parcial' | 'pendiente' }; tipo: 'unico' | 'parcial' }) {
   const label = payment.estado === 'pagada' ? 'Pagado' : payment.estado === 'parcial' ? 'Parcial' : 'Pendiente';
   const color = payment.estado === 'pagada' ? 'text-primary' : payment.estado === 'parcial' ? 'text-amber-600' : 'text-muted-foreground';
