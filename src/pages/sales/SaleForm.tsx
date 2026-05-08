@@ -736,46 +736,89 @@ function CalcRow({ label, value, highlight = false, sub = false }: { label: stri
   );
 }
 
+// Parse a user-entered numeric string supporting "5,000,000", "5.000.000", "5000000.50", "5000000,50"
+function parseNum(input: string): number {
+  if (!input) return 0;
+  const s = String(input).trim().replace(/\s|[$₡€£¥]/g, '');
+  if (!s) return 0;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  let normalized: string;
+  if (hasComma && hasDot) {
+    // Rightmost separator is the decimal one; strip the others
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      normalized = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      normalized = s.replace(/,/g, '');
+    }
+  } else if (hasComma || hasDot) {
+    const sep = hasComma ? ',' : '.';
+    const parts = s.split(sep);
+    if (parts.length > 2) {
+      // Multiple occurrences => thousands separator
+      normalized = parts.join('');
+    } else {
+      const after = parts[1] ?? '';
+      // 3 digits after a single separator => thousands ("5,000"); otherwise decimal ("5.00", "5,5")
+      if (after.length === 3) normalized = parts.join('');
+      else normalized = parts.join('.');
+    }
+  } else {
+    normalized = s;
+  }
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
+const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const fmtMoney = (n: number) =>
+  Number.isFinite(n)
+    ? n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '';
+
 function PriceFields({ precio_usd, tasa, onChange }: { precio_usd: number; tasa: number; onChange: (precio_usd: number, tasa: number) => void }) {
-  const fmt = (n: number) => (Number.isFinite(n) && n !== 0 ? String(Number(n.toFixed(2))) : n === 0 ? '0' : '');
-  const [usdStr, setUsdStr] = useState(fmt(precio_usd));
-  const [rdStr, setRdStr] = useState(fmt(precio_usd * tasa));
+  const [usdStr, setUsdStr] = useState(fmtMoney(precio_usd));
+  const [rdStr, setRdStr] = useState(fmtMoney(round2(precio_usd * tasa)));
   const [tasaStr, setTasaStr] = useState(String(tasa));
   const [editing, setEditing] = useState<null | 'usd' | 'rd' | 'tasa'>(null);
   const lastEditedRef = React.useRef<'usd' | 'rd'>('usd');
 
   // Sync from parent when not actively editing (e.g., loading existing sale)
   useEffect(() => {
-    if (editing !== 'usd') setUsdStr(fmt(precio_usd));
-    if (editing !== 'rd') setRdStr(fmt(precio_usd * tasa));
+    if (editing !== 'usd') setUsdStr(fmtMoney(precio_usd));
+    if (editing !== 'rd') setRdStr(fmtMoney(round2(precio_usd * tasa)));
     if (editing !== 'tasa') setTasaStr(String(tasa));
   }, [precio_usd, tasa, editing]);
 
   const commit = (which: 'usd' | 'rd' | 'tasa') => {
     if (which === 'usd') {
-      const usd = Math.max(0, parseFloat(usdStr) || 0);
+      const usd = round2(Math.max(0, parseNum(usdStr)));
       lastEditedRef.current = 'usd';
       onChange(usd, tasa);
-      setRdStr(fmt(usd * tasa));
-      setUsdStr(fmt(usd));
+      setUsdStr(fmtMoney(usd));
+      setRdStr(fmtMoney(round2(usd * tasa)));
     } else if (which === 'rd') {
-      const rd = Math.max(0, parseFloat(rdStr) || 0);
-      const usd = tasa > 0 ? Number((rd / tasa).toFixed(2)) : 0;
+      const rd = round2(Math.max(0, parseNum(rdStr)));
+      const usd = tasa > 0 ? round2(rd / tasa) : 0;
       lastEditedRef.current = 'rd';
       onChange(usd, tasa);
-      setUsdStr(fmt(usd));
-      setRdStr(fmt(rd));
+      setUsdStr(fmtMoney(usd));
+      setRdStr(fmtMoney(rd));
     } else {
-      const newTasa = Math.max(0, parseFloat(tasaStr) || 0);
+      const newTasa = Math.max(0, parseNum(tasaStr));
       if (lastEditedRef.current === 'rd') {
-        const rd = parseFloat(rdStr) || 0;
-        const usd = newTasa > 0 ? Number((rd / newTasa).toFixed(2)) : 0;
+        const rd = parseNum(rdStr);
+        const usd = newTasa > 0 ? round2(rd / newTasa) : 0;
         onChange(usd, newTasa);
-        setUsdStr(fmt(usd));
+        setUsdStr(fmtMoney(usd));
+        setRdStr(fmtMoney(round2(rd)));
       } else {
-        const usd = parseFloat(usdStr) || 0;
+        const usd = round2(parseNum(usdStr));
         onChange(usd, newTasa);
-        setRdStr(fmt(usd * newTasa));
+        setRdStr(fmtMoney(round2(usd * newTasa)));
       }
       setTasaStr(String(newTasa));
     }
@@ -787,7 +830,7 @@ function PriceFields({ precio_usd, tasa, onChange }: { precio_usd: number; tasa:
       <div className="space-y-2">
         <Label className="text-xs">Precio USD *</Label>
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
           value={usdStr}
           onFocus={() => setEditing('usd')}
@@ -798,7 +841,7 @@ function PriceFields({ precio_usd, tasa, onChange }: { precio_usd: number; tasa:
       <div className="space-y-2">
         <Label className="text-xs">Tasa</Label>
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
           value={tasaStr}
           onFocus={() => setEditing('tasa')}
@@ -809,7 +852,7 @@ function PriceFields({ precio_usd, tasa, onChange }: { precio_usd: number; tasa:
       <div className="space-y-2">
         <Label className="text-xs">Precio RD$</Label>
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
           value={rdStr}
           onFocus={() => setEditing('rd')}
